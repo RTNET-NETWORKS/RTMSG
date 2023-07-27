@@ -33,49 +33,6 @@ def sql_conn():
 	db=pymysql.connect(host=donnees[0][0], charset="utf8",user=donnees[0][1], passwd=donnees[0][2],db=donnees[0][3])
 	return db
 
-def register_user():
-	print("/!\\")
-	print("A tout moment vous pouvez annuler la création d'un utilisateur en écrivant 'sss' (les valeurs sont vérifiées à la fin des questions)")
-	print("/!\\")
-	register_name = input(str("Nom de l'utilisateur : "))
-	register_pass = getpass.getpass()
-	register_mail = input(str("E-mail de l'utilisateur : "))
-	register_rank = input(str("Permissions de l'utilisateur : user/system/admin : "))
-	incorrect = 0
-	if register_name == "sss" or register_pass == "sss" or register_mail == "sss" or register_rank == "sss":
-		print("Annulation...")
-	if register_rank != "user" and register_rank != "system" and register_rank != "admin":
-		print("Niveau de permissions incorrect ! Annulation")
-		incorrect = 1
-	if incorrect != 1:
-		register_pass = text_hash(register_pass)
-		db = sql_conn()
-		c = db.cursor()
-		c.execute("insert into users values (DEFAULT,'"+register_name+"','"+register_mail+"','"+register_pass+"',DEFAULT,'"+register_rank+"');")
-		c.fetchone()
-		print("Utilisateur créé")
-		db.commit()
-		db.close()
-
-def privilege_user():
-	print("/!\\")
-	print("A tout moment vous pouvez annuler la création d'un utilisateur en écrivant 'sss' (les valeurs sont vérifiées à la fin des questions)")
-	print("/!\\")
-	modify_name = input(str("Nom de l'utilisateur : "))
-	modify_rank = input(str("Rang choisi : user/system/admin : "))
-	incorrect = 0
-	if modify_rank != "user" and modify_rank != "system" and modify_rank != "admin":
-		print("Niveau de permissions incorrect ! Annulation")
-		incorrect = 1
-	if incorrect != 1:
-		db = sql_conn()
-		c = db.cursor()
-		c.execute("UPDATE users SET rank = '"+modify_rank+"' WHERE username = '"+modify_name+"';")
-		c.fetchone()
-		db.commit()
-		db.close()
-		print("Niveau de permissions de l'utilisateur modifié")
-
 def generate_rsa_key_pair():
 	# Générer une paire de clés RSA
 	private_key = rsa.generate_private_key(
@@ -118,7 +75,7 @@ def generate_rsa_key_pair(user):
     public_key = private_key.public_key()
 
     # Sérialiser la clé privée au format PEM et l'enregistrer dans un fichier
-    with open("private_key.pem", "wb") as f:
+    with open("private_key_"+user+".pem", "wb") as f:
         private_key_pem = private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
@@ -149,11 +106,15 @@ def save_public_key_to_database(username, encoded_public_key):
 	# Établir la connexion à la base de données
 	db = sql_conn()
 	c = db.cursor()
-
-	# Exécuter la requête SQL pour insérer la clé publique dans la base de données
-	query = "INSERT INTO users (user, clef) VALUES (%s, %s)"
-	c.execute(query, (username, encoded_public_key))
-
+	c.execute("select user from users where user = '"+username+"';")
+	if c.fetchone():
+		print("Utilisateur existant")
+		query = "UPDATE users SET clef = %s WHERE user = %s"
+		c.execute(query, (encoded_public_key, username))
+	else:
+		# Exécuter la requête SQL pour insérer la clé publique dans la base de données
+		query = "INSERT INTO users (user, clef) VALUES (%s, %s)"
+		c.execute(query, (username, encoded_public_key))
 	# Valider la transaction et fermer le curseur et la connexion
 	db.commit()
 	c.close()
@@ -251,9 +212,7 @@ def dial():
 		print("")
 		print("exit : quitter le programme")
 		print("logout : se déconnecter")
-		print("rsa : générerer une paire de clefs RSA")
-		print("register : enregistrer un nouvel utilisateur")
-		print("privilege : modifier le rang d'un utilisateur")
+		print("rsa : générerer une paire de clefs RSA, et enregistrer dans la DB avec l'utilisateur associé, ou modifier un utilisateur existant")
 		print("")
 		query = input(str("># "))
 		if query == "exit" or query == "quit":
@@ -264,10 +223,6 @@ def dial():
 			print("")
 			print("Déconnexion...")
 			dial()
-		elif query == "register":
-			register_user()
-		elif query == "privilege":
-			privilege_user()
 		elif query == "rsa":
 			user_rsa = input(str("Lier la clef à quel utilisateur : "))
 			generate_rsa_key_pair(user_rsa)
