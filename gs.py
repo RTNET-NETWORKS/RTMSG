@@ -65,7 +65,7 @@ def generate_rsa_key_pair():
 
 	return private_key_pem, public_key_pem
 
-def generate_rsa_key_pair(user):
+def generate_rsa_key_pair(user_t,user):
     # Générer une paire de clés RSA
     private_key = rsa.generate_private_key(
         public_exponent=65537,
@@ -75,7 +75,7 @@ def generate_rsa_key_pair(user):
     public_key = private_key.public_key()
 
     # Sérialiser la clé privée au format PEM et l'enregistrer dans un fichier
-    with open("private_key_"+user+".pem", "wb") as f:
+    with open("private_key_"+user_t+".pem", "wb") as f:
         private_key_pem = private_key.private_bytes(
             encoding=serialization.Encoding.PEM,
             format=serialization.PrivateFormat.PKCS8,
@@ -93,7 +93,7 @@ def generate_rsa_key_pair(user):
     encoded_public_key = base64.b64encode(public_key_pem).decode()
 
     # Enregistrer la clé publique dans la base de données (remplacez "user1" par le nom d'utilisateur approprié)
-    save_public_key_to_database(user, encoded_public_key)
+    save_public_key_to_database(user, encoded_public_key, user_t)
 
     return private_key_pem, public_key_pem
 
@@ -102,19 +102,22 @@ def generer_message_aleatoire(longueur):
 	message = ''.join(random.choice(caracteres) for _ in range(longueur))
 	return message
 
-def save_public_key_to_database(username, encoded_public_key):
+def save_public_key_to_database(username, encoded_public_key, user_t):
 	# Établir la connexion à la base de données
 	db = sql_conn()
 	c = db.cursor()
-	c.execute("select user from users where user = '"+username+"';")
+	c.execute("select user from users where user = '"+user_t+"';")
+	print("")
 	if c.fetchone():
 		print("Utilisateur existant")
 		query = "UPDATE users SET clef = %s WHERE user = %s"
-		c.execute(query, (encoded_public_key, username))
+		c.execute(query, (encoded_public_key, user_t))
+		c.execute("insert into operation values (DEFAULT, '"+username+"','change_key','"+user_t+"',DEFAULT);")
 	else:
 		# Exécuter la requête SQL pour insérer la clé publique dans la base de données
 		query = "INSERT INTO users (user, clef) VALUES (%s, %s)"
-		c.execute(query, (username, encoded_public_key))
+		c.execute(query, (user_t, encoded_public_key))
+		c.execute("insert into operation values (DEFAULT, '"+username+"','register_user','"+user_t+"',DEFAULT);")
 	# Valider la transaction et fermer le curseur et la connexion
 	db.commit()
 	c.close()
@@ -159,18 +162,57 @@ def encrypt_message_with_public_key(public_key, message):
 	)
 	return encrypted_message
 
-def dial():
-	print("");
+def user_grant(user,user_g):
+	db = sql_conn()
+	c = db.cursor()
+	c.execute("select user from users where user = '"+user_g+"';")
+	print("")
+	if not c.fetchone():
+		print("Utilisateur inconnu")
+		c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_g+"',DEFAULT);")
+		dial()
+	c.execute("select user, level from admin where user = '"+user+"';")
+	result = c.fetchone()
+	if result:
+		level = input(str("Niveau d'accès (1-3) : "))
+		print("")
+		levelint = int(level)
+		if levelint < 1 or levelint > 3:
+			print("Opération refusée : niveau d'accès invalide")
+			c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_g+"',DEFAULT);")
+			dial()
+		if int(result[1]) == 4:
+			c.execute("select user, level from admin where user = '"+user_g+"';")
+			result = c.fetchone()
+			if result:
+				if int(result[1]) == 4:
+					print("Opération refusée : l'utilisateur est déjà administrateur")
+					c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_g+"',DEFAULT);")
+				else:
+					c.execute("update admin set level = "+level+" where user = '"+user_g+"';")
+					c.execute("insert into operation values (DEFAULT, '"+user+"','grant','"+user_g+"',DEFAULT);")
+			else:
+				c.execute("insert into admin values (DEFAULT,'"+user_g+"',"+level+",DEFAULT,DEFAULT);")
+				c.execute("insert into operation values (DEFAULT, '"+user+"','grant','"+user_g+"',DEFAULT);")
+		else:
+			print("Opération refusée")
+			c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_g+"',DEFAULT);")
+	else:
+		print("Opération refusée")
+		c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_g+"',DEFAULT);")
+	db.commit()
+	c.close()
+	db.close()
+	print("")
+
+def auth():
+	print("")
 	print("Bienvenue sur GS ! Identifiez-vous")
 	user = input(str("Utilisateur : "))
 	db = sql_conn()
 	c = db.cursor()
 	public_key = load_public_key_from_database(user)
-	if public_key is not None:
-		# Afficher la clé publique récupérée
-		print("Clé publique pour l'utilisateur", user)
-		print(public_key)
-	else:
+	if public_key is None:
 		print(f"Clé publique introuvable pour l'utilisateur '{user}'.")
 #	c.execute("select clef from users where user = '"+user+"';")
 #	result = c.fetchone()
@@ -198,14 +240,29 @@ def dial():
 		if decrypted_message == message_to_encrypt:
 			print("Authentification réussie !")
 			print("")
+			db = sql_conn()
+			c = db.cursor()
+			c.execute("insert into operation values (DEFAULT, '"+user+"','authentication',NULL,DEFAULT);")
+			db.commit()
+			c.close()
+			db.close()
+			dial(user)
 		else:
 			print("Authentification échouée !")
+			db = sql_conn()
+			c = db.cursor()
+			c.execute("insert into operation values (DEFAULT, '"+user+"','failed_authentication',NULL,DEFAULT);")
+			db.commit()
+			c.close()
+			db.close()
 			exit(2)
 	else:
 		print("Clef introuvable pour cet utilisateur")
 		exit(2)
 	c.close()
 	db.close()
+
+def dial(user):
 	print("")
 	while True:
 		print("Options disponibles :")
@@ -213,20 +270,57 @@ def dial():
 		print("exit : quitter le programme")
 		print("logout : se déconnecter")
 		print("rsa : générerer une paire de clefs RSA, et enregistrer dans la DB avec l'utilisateur associé, ou modifier un utilisateur existant")
+		print("grant : accorder un niveau d'accès à un utilisateur")
 		print("")
 		query = input(str("># "))
 		if query == "exit" or query == "quit":
 			print("")
 			print("Au revoir !")
+			db = sql_conn()
+			c = db.cursor()
+			c.execute("insert into operation values (DEFAULT, '"+user+"','deconnection',NULL,DEFAULT);")
+			db.commit()
+			c.close()
+			db.close()
 			exit(0)
 		elif query == "logout":
 			print("")
 			print("Déconnexion...")
-			dial()
+			db = sql_conn()
+			c = db.cursor()
+			c.execute("insert into operation values (DEFAULT, '"+user+"','deconnection',NULL,DEFAULT);")
+			db.commit()
+			c.close()
+			db.close()
+			auth()
 		elif query == "rsa":
 			user_rsa = input(str("Lier la clef à quel utilisateur : "))
-			generate_rsa_key_pair(user_rsa)
+			print("")
+			if user_rsa != user:
+				db = sql_conn()
+				c = db.cursor()
+				c.execute("select user, level from admin where user = '"+user+"';")
+				result = c.fetchone()
+				if result:
+					if int(result[1]) >= 3:
+						generate_rsa_key_pair(user_rsa,user)
+					else:
+						print("Opération refusée")
+						c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_rsa+"',DEFAULT);")
+				else:
+					print("Opération refusée")
+					c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_rsa+"',DEFAULT);")
+				print("")
+				db.commit()
+				c.close()
+				db.close()
+			else:
+				generate_rsa_key_pair(user,user)
+		elif query == "grant":
+			user_g = input(str("Utilisateur à promouvoir : "))
+			user_grant(user,user_g)
 		else:
-			print("Commande non-reconnue")
+			print("")
+			print("Commande inconnue")
 
-dial()
+auth()
