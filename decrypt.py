@@ -36,7 +36,7 @@ def decrypt_message_with_private_key(private_key_path, encrypted_message):
 
 def main():
     # Chemin vers le fichier PEM contenant la clé privée
-    private_key_path = "private_key.pem"
+    private_key_path = input("Entrez le chemin vers la clé privée : ")
 
     # Demander à l'utilisateur de copier-coller le message chiffré
     encrypted_message = input("Collez le message chiffré (base64) ici : ")
