@@ -216,7 +216,7 @@ def send_message(user):
 	if result is None:
 		print("Utilisateur inconnu")
 		c.execute("insert into operation values (DEFAULT, '"+user+"','bad_target','"+target+"',DEFAULT);")
-		dial()
+		dial(user)
 	else:
 		public_key_encoded = result[0]
 		decoded_public_key = base64.b64decode(public_key_encoded)
@@ -238,18 +238,22 @@ def read_message(user):
 	c.execute("select user from users where user = '"+user+"';")
 	result = c.fetchone()
 	if result:
-		c.execute("select * from messages where target = '"+user+"' and message_read = 0;")
-		result = c.fetchone()
-		if result:
-			while result:
-				print("Message de "+result[1]+" : "+result[3])
+		fini = 0
+		while fini != 1:
+			c.execute("select * from messages where target = '"+user+"' and message_read = 0;")
+			result = c.fetchone()
+			if result:
+				message_decode = decrypt_message_with_private_key("private_key_"+user+".pem", result[3])
+				print("Message de "+result[1]+" : "+message_decode)
 				print("")
 				c.execute("update messages set message_read = 1 where id = "+str(result[0])+";")
-		else:
-			print("Aucun message non-lu")
-		db.commit()
-		c.close()
-		db.close()
+			else:
+				print("Aucun message non-lu")
+				fini = 1
+	print("")
+	db.commit()
+	c.close()
+	db.close()
 
 def decrypt_message_with_private_key(private_key_path, encrypted_message):
     # Charger la clé privée depuis le fichier PEM
