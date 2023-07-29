@@ -205,6 +205,80 @@ def user_grant(user,user_g):
 	db.close()
 	print("")
 
+def send_message(user):
+	target = input(str("Destinataire : "))
+	message = input(str("Message : "))
+	print("")
+	db = sql_conn()
+	c = db.cursor()
+	c.execute("select clef from users where user = '"+target+"';")
+	result = c.fetchone()
+	if result is None:
+		print("Utilisateur inconnu")
+		c.execute("insert into operation values (DEFAULT, '"+user+"','bad_target','"+target+"',DEFAULT);")
+		dial(user)
+	else:
+		public_key_encoded = result[0]
+		decoded_public_key = base64.b64decode(public_key_encoded)
+		public_key = serialization.load_pem_public_key(decoded_public_key, backend=default_backend())
+		encrypted_message = encrypt_message_with_public_key(public_key, message)
+		print("Message chiffré :", base64.b64encode(encrypted_message).decode())
+		print("")
+		c.execute("insert into operation values (DEFAULT, '"+user+"','send_message','"+target+"',DEFAULT);")
+		c.execute("insert into messages values (DEFAULT, '"+user+"','"+target+"','"+base64.b64encode(encrypted_message).decode()+"',DEFAULT);")
+	db.commit()
+	c.close()
+	db.close()
+
+def read_message(user):
+	print("Lecture des messages non-lus")
+	print("")
+	db = sql_conn()
+	c = db.cursor()
+	c.execute("select user from users where user = '"+user+"';")
+	result = c.fetchone()
+	if result:
+		fini = 0
+		while fini != 1:
+			c.execute("select * from messages where target = '"+user+"' and message_read = 0;")
+			result = c.fetchone()
+			if result:
+				message_decode = decrypt_message_with_private_key("private_key_"+user+".pem", result[3])
+				print("Message de "+result[1]+" : "+message_decode)
+				print("")
+				c.execute("update messages set message_read = 1 where id = "+str(result[0])+";")
+			else:
+				print("Aucun message non-lu")
+				fini = 1
+	print("")
+	db.commit()
+	c.close()
+	db.close()
+
+def decrypt_message_with_private_key(private_key_path, encrypted_message):
+    # Charger la clé privée depuis le fichier PEM
+    with open(private_key_path, "rb") as key_file:
+        private_key = serialization.load_pem_private_key(
+            key_file.read(),
+            password=None,
+            backend=default_backend()
+        )
+
+    # Décoder le message chiffré depuis la base64
+    decoded_encrypted_message = base64.b64decode(encrypted_message)
+
+    # Déchiffrer le message avec la clé privée
+    decrypted_message = private_key.decrypt(
+        decoded_encrypted_message,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+
+    return decrypted_message.decode()
+
 def auth():
 	print("")
 	print("Bienvenue sur GS ! Identifiez-vous")
@@ -233,10 +307,15 @@ def auth():
 		# Chiffrer le message avec la clé publique
 		encrypted_message = encrypt_message_with_public_key(public_key, message_to_encrypt)
 		# Afficher le message chiffré (représenté en bytes)
-		print("Message chiffré :", base64.b64encode(encrypted_message).decode())
-		print("")
+#		print("Message chiffré :", base64.b64encode(encrypted_message).decode())
+#		print("")
 		# Demander à l'utilisateur de saisir le message déchiffré
-		decrypted_message = input("Déchiffrez ce message avec votre clef privée : ")
+#		decrypted_message = input("Déchiffrez ce message avec votre clef privée : ")
+		try:
+			decrypted_message = decrypt_message_with_private_key("private_key_"+user+".pem", base64.b64encode(encrypted_message).decode())
+		except Exception as e:
+			print("Erreur lors du déchiffrement :", e)
+			exit(2)
 		if decrypted_message == message_to_encrypt:
 			print("Authentification réussie !")
 			print("")
@@ -271,6 +350,8 @@ def dial(user):
 		print("logout : se déconnecter")
 		print("rsa : générerer une paire de clefs RSA, et enregistrer dans la DB avec l'utilisateur associé, ou modifier un utilisateur existant")
 		print("grant : accorder un niveau d'accès à un utilisateur")
+		print("send : envoyer un message à quelqu'un")
+		print("read : lire les messages non-lus")
 		print("")
 		query = input(str("># "))
 		if query == "exit" or query == "quit":
@@ -319,6 +400,10 @@ def dial(user):
 		elif query == "grant":
 			user_g = input(str("Utilisateur à promouvoir : "))
 			user_grant(user,user_g)
+		elif query == "send":
+			send_message(user)
+		elif query == "read":
+			read_message(user)
 		else:
 			print("")
 			print("Commande inconnue")
