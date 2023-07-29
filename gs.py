@@ -65,37 +65,44 @@ def generate_rsa_key_pair():
 
 	return private_key_pem, public_key_pem
 
-def generate_rsa_key_pair(user_t,user):
-    # Générer une paire de clés RSA
-    private_key = rsa.generate_private_key(
-        public_exponent=65537,
-        key_size=2048,
-        backend=default_backend()
-    )
-    public_key = private_key.public_key()
+def generate_rsa_key_pair(user_t,user,send):
+	# Générer une paire de clés RSA
+	private_key = rsa.generate_private_key(
+		public_exponent=65537,
+		key_size=2048,
+		backend=default_backend()
+	)
+	public_key = private_key.public_key()
 
-    # Sérialiser la clé privée au format PEM et l'enregistrer dans un fichier
-    with open("private_key_"+user_t+".pem", "wb") as f:
-        private_key_pem = private_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption()
-        )
-        f.write(private_key_pem)
+	# Sérialiser la clé privée au format PEM et l'enregistrer dans un fichier
+	with open("private_key_"+user_t+".pem", "wb") as f:
+		private_key_pem = private_key.private_bytes(
+			encoding=serialization.Encoding.PEM,
+			format=serialization.PrivateFormat.PKCS8,
+			encryption_algorithm=serialization.NoEncryption()
+		)
+		f.write(private_key_pem)
 
-    # Sérialiser la clé publique au format PEM
-    public_key_pem = public_key.public_bytes(
-        encoding=serialization.Encoding.PEM,
-        format=serialization.PublicFormat.SubjectPublicKeyInfo
-    )
+	# Sérialiser la clé publique au format PEM
+	public_key_pem = public_key.public_bytes(
+		encoding=serialization.Encoding.PEM,
+		format=serialization.PublicFormat.SubjectPublicKeyInfo
+	)
 
     # Encoder la clé publique en base64 avant de l'enregistrer dans la base de données
-    encoded_public_key = base64.b64encode(public_key_pem).decode()
+	encoded_public_key = base64.b64encode(public_key_pem).decode()
 
-    # Enregistrer la clé publique dans la base de données (remplacez "user1" par le nom d'utilisateur approprié)
-    save_public_key_to_database(user, encoded_public_key, user_t)
+	# Enregistrer la clé publique dans la base de données (remplacez "user1" par le nom d'utilisateur approprié)
+	if send == 0:
+		print("Clef privée :")
+		print(private_key_pem.decode())
+		print("")
+		print("Clef publique :")
+		print(public_key_pem.decode())
+	else:
+		save_public_key_to_database(user, encoded_public_key, user_t)
 
-    return private_key_pem, public_key_pem
+	return private_key_pem, public_key_pem
 
 def generer_message_aleatoire(longueur):
 	caracteres = string.ascii_letters + string.digits + string.punctuation + " "
@@ -279,6 +286,47 @@ def decrypt_message_with_private_key(private_key_path, encrypted_message):
 
     return decrypted_message.decode()
 
+def drop_user(user,target):
+	db = sql_conn()
+	c = db.cursor()
+	print("")
+	c.execute("select level from admin where user = '"+user+"';")
+	result = c.fetchone()
+	if result is None:
+		print("Opération refusée")
+		c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
+		dial(user)
+	else:
+		if int(result[0]) == 4:
+			c.execute("select user from users where user = '"+target+"';")
+			result = c.fetchone()
+			if result:
+				c.execute("select level from admin where user = '"+target+"';")
+				result = c.fetchone()
+				if result is None:
+					c.execute("delete from users where user = '"+target+"';")
+					c.execute("insert into operation values (DEFAULT, '"+user+"','drop_user','"+target+"',DEFAULT);")
+					print("Utilisateur supprimé")
+				elif int(result[0]) == 4:
+					print("Opération refusée : vous ne pouvez pas supprimer un administrateur")
+					c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
+					dial(user)
+				else:
+					c.execute("delete from users where user = '"+target+"';")
+					c.execute("delete from admin where user = '"+target+"';")
+					c.execute("insert into operation values (DEFAULT, '"+user+"','drop_user','"+target+"',DEFAULT);")
+					print("Utilisateur supprimé")
+			else:
+				print("Utilisateur inconnu")
+				c.execute("insert into operation values (DEFAULT, '"+user+"','bad_target','"+target+"',DEFAULT);")
+		else:
+			print("Opération refusée")
+			c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
+	db.commit()
+	c.close()
+	db.close()
+	print("")
+
 def auth():
 	print("")
 	print("Bienvenue sur GS ! Identifiez-vous")
@@ -350,6 +398,9 @@ def dial(user):
 		print("logout : se déconnecter")
 		print("rsa : générerer une paire de clefs RSA, et enregistrer dans la DB avec l'utilisateur associé, ou modifier un utilisateur existant")
 		print("grant : accorder un niveau d'accès à un utilisateur")
+		print("drop : supprimer un utilisateur")
+		print("decrypt : déchiffrer un message quelconque avec votre clef privée ou celle d'un autre")
+		print("encrypt : chiffrer un message quelconque avec une clef publique")
 		print("send : envoyer un message à quelqu'un")
 		print("read : lire les messages non-lus")
 		print("")
@@ -375,28 +426,36 @@ def dial(user):
 			db.close()
 			auth()
 		elif query == "rsa":
-			user_rsa = input(str("Lier la clef à quel utilisateur : "))
+			reponse = input(str("Générer une paire de clefs RSA pour un autre utilisateur et l'exporter dans la DB ? Ou générer une paire de clefs RSA pour vous-même ? (D/V) "))
 			print("")
-			if user_rsa != user:
-				db = sql_conn()
-				c = db.cursor()
-				c.execute("select user, level from admin where user = '"+user+"';")
-				result = c.fetchone()
-				if result:
-					if int(result[1]) >= 3:
-						generate_rsa_key_pair(user_rsa,user)
+			if reponse == "d" or reponse == "D":
+				user_rsa = input(str("Lier la clef à quel utilisateur : "))
+				print("")
+				if user_rsa != user:
+					db = sql_conn()
+					c = db.cursor()
+					c.execute("select user, level from admin where user = '"+user+"';")
+					result = c.fetchone()
+					if result:
+						if int(result[1]) >= 3:
+							send = 1
+							generate_rsa_key_pair(user_rsa,user,send)
+						else:
+							print("Opération refusée")
+							c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_rsa+"',DEFAULT);")
 					else:
 						print("Opération refusée")
 						c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_rsa+"',DEFAULT);")
+					print("")
+					db.commit()
+					c.close()
+					db.close()
 				else:
-					print("Opération refusée")
-					c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_rsa+"',DEFAULT);")
-				print("")
-				db.commit()
-				c.close()
-				db.close()
-			else:
-				generate_rsa_key_pair(user,user)
+					send = 1
+					generate_rsa_key_pair(user,user,send)
+			elif reponse == "v" or reponse == "V":
+				send = 0
+				generate_rsa_key_pair(user,user,send)
 		elif query == "grant":
 			user_g = input(str("Utilisateur à promouvoir : "))
 			user_grant(user,user_g)
@@ -404,6 +463,61 @@ def dial(user):
 			send_message(user)
 		elif query == "read":
 			read_message(user)
+		elif query == "drop":
+			target = input(str("Utilisateur à supprimer : "))
+			drop_user(user,target)
+		elif query == "decrypt":
+			print("")
+			reponse = input(str("Déchiffrer avec votre clef ? y/n : "))
+			if reponse == "y" or reponse == "Y":
+				key = "private_key_"+user+".pem"
+			else:
+				key = input(str("Nom de la clef privée : "))
+			print("Déchiffrement d'un message")
+			print("")
+			message = input(str("Message à déchiffrer : "))
+			print("")
+			try:
+				message_decode = decrypt_message_with_private_key(key, message)
+				print("Message déchiffré :", message_decode)
+			except Exception as e:
+				print("Erreur lors du déchiffrement :", e)
+			print("")
+		elif query == "encrypt":
+			print("")
+			reponse = input(str("Quelle clef utiliser ? La vôtre ou celle d'un autre ? y/n : "))
+			db = sql_conn()
+			c = db.cursor()
+			if reponse == "y" or reponse == "Y":
+				c.execute("select clef from users where user = '"+user+"';")
+				result = c.fetchone()
+				if result:
+					public_key_encoded = result[0]
+					decoded_public_key = base64.b64decode(public_key_encoded)
+					public_key = serialization.load_pem_public_key(decoded_public_key, backend=default_backend())
+					message = input(str("Message à chiffrer : "))
+					print("")
+					encrypted_message = encrypt_message_with_public_key(public_key, message)
+					print("Message chiffré :", base64.b64encode(encrypted_message).decode())
+					print("")
+				else:
+					print("Clef introuvable")
+			else:
+				target = input(str("Utilisateur : "))
+				c.execute("select clef from users where user = '"+target+"';")
+				result = c.fetchone()
+				if result:
+					public_key_encoded = result[0]
+					decoded_public_key = base64.b64decode(public_key_encoded)
+					public_key = serialization.load_pem_public_key(decoded_public_key, backend=default_backend())
+					message = input(str("Message à chiffrer : "))
+					print("")
+					encrypted_message = encrypt_message_with_public_key(public_key, message)
+					print("Message chiffré :", base64.b64encode(encrypted_message).decode())
+					print("")
+				else:
+					print("Clef introuvable")
+			print("")
 		else:
 			print("")
 			print("Commande inconnue")
