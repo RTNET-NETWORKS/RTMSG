@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : localhost:3306
--- Généré le : dim. 10 sep. 2023 à 14:30
+-- Généré le : dim. 10 sep. 2023 à 15:38
 -- Version du serveur : 10.11.3-MariaDB-1
 -- Version de PHP : 8.2.7
 
@@ -71,7 +71,7 @@ CREATE TABLE `messages` (
 CREATE TABLE `operation` (
   `id` int(16) NOT NULL COMMENT 'Identifiant de l''opération',
   `user` varchar(32) NOT NULL COMMENT 'Utilisateur ayant produit l''opération',
-  `type` enum('authentication','change_key','communication','failed_authentication','send_message','register_user','deconnection','forbidden','grant','bad_target','drop_user','rtkey_send_passwd','rtkey_check_passwd','bad_invitation','invitation','registration') NOT NULL COMMENT 'Nature de l''opération',
+  `type` enum('authentication','change_key','communication','failed_authentication','send_message','register_user','deconnection','forbidden','grant','bad_target','drop_user','rtkey_send_passwd','rtkey_check_passwd','bad_invitation','invitation','registration','delete_message') NOT NULL COMMENT 'Nature de l''opération',
   `target` varchar(32) DEFAULT NULL COMMENT 'Éventuel destinataire, dans le cas d''une communication',
   `heure` datetime NOT NULL DEFAULT current_timestamp() COMMENT 'Heure de l''opération'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Liste des opérations';
