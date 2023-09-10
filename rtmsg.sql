@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Hôte : localhost:3306
--- Généré le : sam. 29 juil. 2023 à 12:56
+-- Généré le : dim. 10 sep. 2023 à 14:30
 -- Version du serveur : 10.11.3-MariaDB-1
 -- Version de PHP : 8.2.7
 
@@ -38,6 +38,19 @@ CREATE TABLE `admin` (
 -- --------------------------------------------------------
 
 --
+-- Structure de la table `invitation`
+--
+
+CREATE TABLE `invitation` (
+  `id` int(16) NOT NULL COMMENT 'Identifiant de l''invitation',
+  `user` varchar(32) NOT NULL COMMENT 'Utilisateur à l''origine de l''invitation',
+  `target` varchar(32) NOT NULL COMMENT 'Nom d''utilisateur de la personne invitée',
+  `code` varchar(32) NOT NULL COMMENT 'Code d''invitation'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Liste des invitations pour ajouter un nouvel utilisateur';
+
+-- --------------------------------------------------------
+
+--
 -- Structure de la table `messages`
 --
 
@@ -58,10 +71,24 @@ CREATE TABLE `messages` (
 CREATE TABLE `operation` (
   `id` int(16) NOT NULL COMMENT 'Identifiant de l''opération',
   `user` varchar(32) NOT NULL COMMENT 'Utilisateur ayant produit l''opération',
-  `type` enum('authentication','change_key','communication','failed_authentication','send_message','register_user','deconnection','forbidden','grant','bad_target') NOT NULL COMMENT 'Nature de l''opération',
+  `type` enum('authentication','change_key','communication','failed_authentication','send_message','register_user','deconnection','forbidden','grant','bad_target','drop_user','rtkey_send_passwd','rtkey_check_passwd','bad_invitation','invitation','registration') NOT NULL COMMENT 'Nature de l''opération',
   `target` varchar(32) DEFAULT NULL COMMENT 'Éventuel destinataire, dans le cas d''une communication',
   `heure` datetime NOT NULL DEFAULT current_timestamp() COMMENT 'Heure de l''opération'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Liste des opérations';
+
+-- --------------------------------------------------------
+
+--
+-- Structure de la table `passwd`
+--
+
+CREATE TABLE `passwd` (
+  `id` int(16) NOT NULL COMMENT 'Identifiant du mot de passe stocké',
+  `user` varchar(32) NOT NULL COMMENT 'Utilisateur lié au mot de passe',
+  `date` datetime NOT NULL DEFAULT current_timestamp() COMMENT 'Heure d''ajout du mot de passe',
+  `password` text NOT NULL COMMENT 'Mot de passe chiffré',
+  `name` varchar(64) NOT NULL COMMENT 'Nom associé au mot de passe'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='Table des mots de passes de RTKEY';
 
 -- --------------------------------------------------------
 
@@ -88,6 +115,13 @@ ALTER TABLE `admin`
   ADD KEY `user` (`user`);
 
 --
+-- Index pour la table `invitation`
+--
+ALTER TABLE `invitation`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_invitation` (`target`);
+
+--
 -- Index pour la table `messages`
 --
 ALTER TABLE `messages`
@@ -101,6 +135,13 @@ ALTER TABLE `messages`
 ALTER TABLE `operation`
   ADD PRIMARY KEY (`id`),
   ADD KEY `user` (`user`);
+
+--
+-- Index pour la table `passwd`
+--
+ALTER TABLE `passwd`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_utilisateur_libelle` (`user`,`name`);
 
 --
 -- Index pour la table `users`
@@ -121,6 +162,12 @@ ALTER TABLE `admin`
   MODIFY `id` int(16) NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT pour la table `invitation`
+--
+ALTER TABLE `invitation`
+  MODIFY `id` int(16) NOT NULL AUTO_INCREMENT COMMENT 'Identifiant de l''invitation';
+
+--
 -- AUTO_INCREMENT pour la table `messages`
 --
 ALTER TABLE `messages`
@@ -131,6 +178,12 @@ ALTER TABLE `messages`
 --
 ALTER TABLE `operation`
   MODIFY `id` int(16) NOT NULL AUTO_INCREMENT COMMENT 'Identifiant de l''opération';
+
+--
+-- AUTO_INCREMENT pour la table `passwd`
+--
+ALTER TABLE `passwd`
+  MODIFY `id` int(16) NOT NULL AUTO_INCREMENT COMMENT 'Identifiant du mot de passe stocké';
 
 --
 -- AUTO_INCREMENT pour la table `users`
@@ -160,6 +213,12 @@ ALTER TABLE `messages`
 --
 ALTER TABLE `operation`
   ADD CONSTRAINT `user` FOREIGN KEY (`user`) REFERENCES `users` (`user`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Contraintes pour la table `passwd`
+--
+ALTER TABLE `passwd`
+  ADD CONSTRAINT `user_relation` FOREIGN KEY (`user`) REFERENCES `users` (`user`) ON DELETE CASCADE ON UPDATE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

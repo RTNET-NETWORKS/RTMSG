@@ -18,6 +18,9 @@ import csv
 import random
 import string
 import base64
+import socket
+import select
+import sys
 
 def text_hash(text : str):
 	m = hashlib.sha256()
@@ -327,6 +330,113 @@ def drop_user(user,target):
 	db.close()
 	print("")
 
+def real_time(user):
+	server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	IP_srv = str(input("Adresse IP du serveur : "))
+	Port_srv = int(input("Port du serveur : "))
+	target = str(input("Utilisateur : "))
+	public_key = load_public_key_from_database(target)
+	server.connect((IP_srv, Port_srv))
+	comm = 0
+	while comm == 0:
+ 
+	# maintains a list of possible input streams
+		sockets_list = [sys.stdin, server]
+		read_sockets,write_socket, error_socket = select.select(sockets_list,[],[])
+ 
+		for socks in read_sockets:
+			if socks == server:
+				message = socks.recv(2048)
+				print(message.decode())
+			else:
+				message = sys.stdin.readline()
+				if message == "exit" or message == "quit":
+					server.close()
+					comm = 1
+				encrypted_message = encrypt_message_with_public_key(public_key, message)
+				server.send(encrypted_message)
+				sys.stdout.write("<You>")
+				sys.stdout.write(message)
+				sys.stdout.flush()
+	server.close()
+ 
+def rtkey(user):
+	reponse = str(input("Stocker un mot de passe ou en consulter un ? S/C : "))
+	if reponse == "S" or reponse == "s":
+		name = str(input("Nom associé : "))
+		passwd = getpass.getpass("Mot de passe : ")
+		db = sql_conn()
+		c = db.cursor()
+		c.execute("select clef from users where user = '"+user+"';")
+		result = c.fetchone()
+		if result:
+			public_key_encoded = result[0]
+			decoded_public_key = base64.b64decode(public_key_encoded)
+			public_key = serialization.load_pem_public_key(decoded_public_key, backend=default_backend())
+			send_passwd = encrypt_message_with_public_key(public_key, passwd)
+			# Envoyer à la base de données le mot de passe chiffré
+			c.execute("insert into passwd values (DEFAULT, '"+user+"',DEFAULT,'"+base64.b64encode(send_passwd).decode()+"','"+name+"');")
+			c.execute("insert into operation values (DEFAULT, '"+user+"','rtkey_send_passwd','"+user+"',DEFAULT);")
+			print("Mot de passe envoyé")
+			db.commit()
+			c.close()
+			db.close()
+	elif reponse == "C" or reponse == "c":
+		print("Liste des mots de passes :")
+		db = sql_conn()
+		c = db.cursor()
+		c.execute("select name from passwd where user = '"+user+"';")
+		print(c.fetchall())
+		choix = str(input("Choix : "))
+		c.execute("select password from passwd where name = '"+choix+"' and user = '"+user+"';")
+		result = c.fetchone()
+		print("Mot de passe déchiffré :")
+		print("")
+		print(decrypt_message_with_private_key("private_key_"+user+".pem", base64.b64encode(result[0]).decode()))
+		c.execute("insert into operation values (DEFAULT, '"+user+"','rtkey_check_passwd','"+user+"',DEFAULT);")
+		db.commit()
+		c.close()
+		db.close()
+  
+def invite(user,target):
+	print("")
+	# Vérifier le niveau de permission de l'utilisateur
+	db = sql_conn()
+	c = db.cursor()
+	c.execute("select level from admin where user = '"+user+"';")
+	result = c.fetchone()
+	if result:
+		if int(result[0]) >= 3:
+			# Vérifier si l'utilisateur existe déjà
+			c.execute("select user from users where user = '"+target+"';")
+			result = c.fetchone()
+			if result:
+				print("Utilisateur déjà existant")
+				c.execute("insert into operation values (DEFAULT, '"+user+"','bad_invitation','"+target+"',DEFAULT);")
+			else:
+				c.execute("select target from invitation where target = '"+target+"';")
+				result = c.fetchone()
+				if result:
+					print("Utilisateur déjà invité")
+					c.execute("insert into operation values (DEFAULT, '"+user+"','bad_invitation','"+target+"',DEFAULT);")
+				else:
+        			# Générer un code d'invitation aléatoire
+					code = generer_message_aleatoire(6)
+					c.execute("insert into invitation values (DEFAULT,'"+user+"','"+target+"','"+code+"')")
+					c.execute("insert into operation values (DEFAULT, '"+user+"','invitation','"+target+"',DEFAULT);")
+					print("Code d'invitation créé : "+code)
+		else:
+			print("Opération refusée")
+			c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
+	else:
+		print("Opération refusée")
+		c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
+	print("")
+	db.commit()
+	c.close()
+	db.close()
+
+
 def auth():
 	print("")
 	print("Bienvenue sur GS ! Identifiez-vous")
@@ -335,7 +445,27 @@ def auth():
 	c = db.cursor()
 	public_key = load_public_key_from_database(user)
 	if public_key is None:
-		print(f"Clé publique introuvable pour l'utilisateur '{user}'.")
+		c.execute("select target from invitation where target = '"+user+"';")
+		result = c.fetchone()
+		if result:
+			print("Utilisateur invité")
+			code = input(str("Code d'invitation : "))
+			c.execute("select code from invitation where target = '"+user+"';")
+			result = c.fetchone()
+			if result:
+				if result[0] == code:
+					print("Code valide")
+					c.execute("delete from invitation where target = '"+user+"';")
+					send = 1
+					generate_rsa_key_pair(user,user,send)
+					print("Votre paire de clef a été générée, relancement de la séquence d'authentification")
+				else:
+					print("Code invalide")
+					exit(2)
+			else:
+				print("Le code n'existe pas")
+				exit(2)
+#		print(f"Clé publique introuvable pour l'utilisateur '{user}'.")
 #	c.execute("select clef from users where user = '"+user+"';")
 #	result = c.fetchone()
 #	if result:
@@ -401,6 +531,9 @@ def dial(user):
 		print("drop : supprimer un utilisateur")
 		print("decrypt : déchiffrer un message quelconque avec votre clef privée ou celle d'un autre")
 		print("encrypt : chiffrer un message quelconque avec une clef publique")
+		print("realtime : initier une conversation en temps réel avec quelqu'un")
+#		print("rtkey : système de stockage sécurisé de mots de passes")
+		print("invite : inviter un nouvel utilisateur à rejoindre RTMSG")
 		print("send : envoyer un message à quelqu'un")
 		print("read : lire les messages non-lus")
 		print("")
@@ -518,6 +651,13 @@ def dial(user):
 				else:
 					print("Clef introuvable")
 			print("")
+		elif query == "realtime":
+			real_time(user)
+#		elif query == "rtkey":
+#			rtkey(user)
+		elif query == "invite":
+			target = input(str("Utilisateur à inviter : "))
+			invite(user,target)
 		else:
 			print("")
 			print("Commande inconnue")
