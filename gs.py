@@ -241,26 +241,75 @@ def send_message(user):
 	db.close()
 
 def read_message(user):
-	print("Lecture des messages non-lus")
-	print("")
+	reponse = input(str("Consulter les messages ou en supprimer ? C/S : "))
 	db = sql_conn()
 	c = db.cursor()
-	c.execute("select user from users where user = '"+user+"';")
-	result = c.fetchone()
-	if result:
-		fini = 0
-		while fini != 1:
-			c.execute("select * from messages where target = '"+user+"' and message_read = 0;")
+	if reponse == "C" or reponse == "c":
+		reponse = input(str("Lire les messages non-lus ou lus ? N/L : "))
+		print("")
+		if reponse == "N" or reponse == "n":
+			print("Lecture des messages non-lus")
+			print("")
+			c.execute("select user from users where user = '"+user+"';")
 			result = c.fetchone()
 			if result:
-				message_decode = decrypt_message_with_private_key("private_key_"+user+".pem", result[3])
-				print("Message de "+result[1]+" : "+message_decode)
-				print("")
-				c.execute("update messages set message_read = 1 where id = "+str(result[0])+";")
+				fini = 0
+				while fini != 1:
+					c.execute("select * from messages where target = '"+user+"' and message_read = 0;")
+					result = c.fetchone()
+					if result:
+						message_decode = decrypt_message_with_private_key("private_key_"+user+".pem", result[3])
+						print("Message de "+result[1]+" : "+message_decode)
+						print("")
+						c.execute("update messages set message_read = 1 where id = "+str(result[0])+";")
+					else:
+						print("Aucun message non-lu")
+						fini = 1
+		else:
+			print("Lecture des messages lus")
+			print("")
+			c.execute("select user from users where user = '"+user+"';")
+			result = c.fetchone()
+			if result:
+				c.execute("select * from messages where target = '"+user+"' and message_read = 1;")
+				result = c.fetchall()
+				if result:
+					for message_individuel in result:
+						message_decode = decrypt_message_with_private_key("private_key_"+user+".pem", message_individuel[3])
+						print("Message de "+message_individuel[1]+" : "+message_decode)
+		print("")
+	elif reponse == "S" or reponse == "s":
+		print("Affichage de l'identifiant de chaque mail : ")
+		print("")
+		c.execute("select user from users where user = '"+user+"';")
+		result = c.fetchone()
+		if result:
+			c.execute("select * from messages where target = '"+user+"';")
+			result = c.fetchall()
+			if result:
+				for message_individuel in result:
+					message_decode = decrypt_message_with_private_key("private_key_"+user+".pem", message_individuel[3])
+					print("Message de "+message_individuel[1]+" : "+message_decode+". ID : "+str(message_individuel[0]))
+			reponse = input(str("Supprimer un message ? O/N : "))
+			if reponse == "O" or reponse == "o":
+				message_id = input(str("ID du message à supprimer : "))
+				# Vérifier si l'utilisateur est bien le destinataire du message
+				c.execute("select target from messages where id = "+message_id+";")
+				result = c.fetchone()
+				if result:
+					if result[0] == user:
+						# Supprimer le message
+						c.execute("delete from messages where id = "+message_id+";")
+						print("Message supprimé")
+						c.execute("insert into operation values (DEFAULT, '"+user+"','delete_message','"+user+"',DEFAULT);")
+					else:
+						print("Opération refusée : vous n'êtes pas le destinataire du message")
+						c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user+"',DEFAULT);")
+				else:
+					print("Message introuvable")
+					c.execute("insert into operation values (DEFAULT, '"+user+"','bad_target','"+user+"',DEFAULT);")
 			else:
-				print("Aucun message non-lu")
-				fini = 1
-	print("")
+				print("Opération annulée")
 	db.commit()
 	c.close()
 	db.close()
@@ -459,6 +508,7 @@ def auth():
 					send = 1
 					generate_rsa_key_pair(user,user,send)
 					print("Votre paire de clef a été générée, relancement de la séquence d'authentification")
+					db.commit()
 				else:
 					print("Code invalide")
 					exit(2)
