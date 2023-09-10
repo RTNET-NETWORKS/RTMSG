@@ -508,6 +508,7 @@ def auth():
 					send = 1
 					generate_rsa_key_pair(user,user,send)
 					print("Votre paire de clef a été générée, relancement de la séquence d'authentification")
+					db.commit()
 				else:
 					print("Code invalide")
 					exit(2)
