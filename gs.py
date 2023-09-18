@@ -241,75 +241,41 @@ def send_message(user):
 	db.close()
 
 def read_message(user):
-	reponse = input(str("Consulter les messages ou en supprimer ? C/S : "))
+	reponse = input(str("Lire les messages non-lus ou lus ? N/L : "))
+	print("")
 	db = sql_conn()
 	c = db.cursor()
-	if reponse == "C" or reponse == "c":
-		reponse = input(str("Lire les messages non-lus ou lus ? N/L : "))
-		print("")
-		if reponse == "N" or reponse == "n":
-			print("Lecture des messages non-lus")
-			print("")
-			c.execute("select user from users where user = '"+user+"';")
-			result = c.fetchone()
-			if result:
-				fini = 0
-				while fini != 1:
-					c.execute("select * from messages where target = '"+user+"' and message_read = 0;")
-					result = c.fetchone()
-					if result:
-						message_decode = decrypt_message_with_private_key("private_key_"+user+".pem", result[3])
-						print("Message de "+result[1]+" : "+message_decode)
-						print("")
-						c.execute("update messages set message_read = 1 where id = "+str(result[0])+";")
-					else:
-						print("Aucun message non-lu")
-						fini = 1
-		else:
-			print("Lecture des messages lus")
-			print("")
-			c.execute("select user from users where user = '"+user+"';")
-			result = c.fetchone()
-			if result:
-				c.execute("select * from messages where target = '"+user+"' and message_read = 1;")
-				result = c.fetchall()
-				if result:
-					for message_individuel in result:
-						message_decode = decrypt_message_with_private_key("private_key_"+user+".pem", message_individuel[3])
-						print("Message de "+message_individuel[1]+" : "+message_decode)
-		print("")
-	elif reponse == "S" or reponse == "s":
-		print("Affichage de l'identifiant de chaque mail : ")
+	if reponse == "N" or reponse == "n":
+		print("Lecture des messages non-lus")
 		print("")
 		c.execute("select user from users where user = '"+user+"';")
 		result = c.fetchone()
 		if result:
-			c.execute("select * from messages where target = '"+user+"';")
+			fini = 0
+			while fini != 1:
+				c.execute("select * from messages where target = '"+user+"' and message_read = 0;")
+				result = c.fetchone()
+				if result:
+					message_decode = decrypt_message_with_private_key("private_key_"+user+".pem", result[3])
+					print("Message de "+result[1]+" : "+message_decode)
+					print("")
+					c.execute("update messages set message_read = 1 where id = "+str(result[0])+";")
+				else:
+					print("Aucun message non-lu")
+					fini = 1
+	else:
+		print("Lecture des messages lus")
+		print("")
+		c.execute("select user from users where user = '"+user+"';")
+		result = c.fetchone()
+		if result:
+			c.execute("select * from messages where target = '"+user+"' and message_read = 1;")
 			result = c.fetchall()
 			if result:
 				for message_individuel in result:
 					message_decode = decrypt_message_with_private_key("private_key_"+user+".pem", message_individuel[3])
-					print("Message de "+message_individuel[1]+" : "+message_decode+". ID : "+str(message_individuel[0]))
-			reponse = input(str("Supprimer un message ? O/N : "))
-			if reponse == "O" or reponse == "o":
-				message_id = input(str("ID du message à supprimer : "))
-				# Vérifier si l'utilisateur est bien le destinataire du message
-				c.execute("select target from messages where id = "+message_id+";")
-				result = c.fetchone()
-				if result:
-					if result[0] == user:
-						# Supprimer le message
-						c.execute("delete from messages where id = "+message_id+";")
-						print("Message supprimé")
-						c.execute("insert into operation values (DEFAULT, '"+user+"','delete_message','"+user+"',DEFAULT);")
-					else:
-						print("Opération refusée : vous n'êtes pas le destinataire du message")
-						c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user+"',DEFAULT);")
-				else:
-					print("Message introuvable")
-					c.execute("insert into operation values (DEFAULT, '"+user+"','bad_target','"+user+"',DEFAULT);")
-			else:
-				print("Opération annulée")
+					print("Message de "+message_individuel[1]+" : "+message_decode)
+	print("")
 	db.commit()
 	c.close()
 	db.close()
@@ -432,16 +398,31 @@ def rtkey(user):
 			db.close()
 	elif reponse == "C" or reponse == "c":
 		print("Liste des mots de passes :")
+		print("")
 		db = sql_conn()
 		c = db.cursor()
 		c.execute("select name from passwd where user = '"+user+"';")
-		print(c.fetchall())
-		choix = str(input("Choix : "))
-		c.execute("select password from passwd where name = '"+choix+"' and user = '"+user+"';")
-		result = c.fetchone()
-		print("Mot de passe déchiffré :")
+		resultat = c.fetchall()
+		for i in resultat:
+			print(i[0])
 		print("")
-		print(decrypt_message_with_private_key("private_key_"+user+".pem", base64.b64encode(result[0]).decode()))
+		choix = str(input("Choix : "))
+		print("")
+		c.execute("select clef from users where user = '"+user+"';")
+		result = c.fetchone()
+		if result:
+			public_key_encoded = result[0]
+			decoded_public_key = base64.b64decode(public_key_encoded)
+			public_key = serialization.load_pem_public_key(decoded_public_key, backend=default_backend())
+			c.execute("select password from passwd where user = '"+user+"' and name = '"+choix+"';")
+			result = c.fetchone()
+			if result:
+				decrypted_message = decrypt_message_with_private_key("private_key_"+user+".pem", result[0])
+				print("Mot de passe : "+decrypted_message)
+				c.execute("insert into operation values (DEFAULT, '"+user+"','rtkey_check_passwd','"+user+"',DEFAULT);")
+			else:
+				print("Mot de passe introuvable")
+				c.execute("insert into operation values (DEFAULT, '"+user+"','rtkey_bad_passwd','"+user+"',DEFAULT);")
 		c.execute("insert into operation values (DEFAULT, '"+user+"','rtkey_check_passwd','"+user+"',DEFAULT);")
 		db.commit()
 		c.close()
@@ -508,7 +489,6 @@ def auth():
 					send = 1
 					generate_rsa_key_pair(user,user,send)
 					print("Votre paire de clef a été générée, relancement de la séquence d'authentification")
-					db.commit()
 				else:
 					print("Code invalide")
 					exit(2)
@@ -582,7 +562,7 @@ def dial(user):
 		print("decrypt : déchiffrer un message quelconque avec votre clef privée ou celle d'un autre")
 		print("encrypt : chiffrer un message quelconque avec une clef publique")
 		print("realtime : initier une conversation en temps réel avec quelqu'un")
-#		print("rtkey : système de stockage sécurisé de mots de passes")
+		print("rtkey : système de stockage sécurisé de mots de passes")
 		print("invite : inviter un nouvel utilisateur à rejoindre RTMSG")
 		print("send : envoyer un message à quelqu'un")
 		print("read : lire les messages non-lus")
@@ -703,8 +683,8 @@ def dial(user):
 			print("")
 		elif query == "realtime":
 			real_time(user)
-#		elif query == "rtkey":
-#			rtkey(user)
+		elif query == "rtkey":
+			rtkey(user)
 		elif query == "invite":
 			target = input(str("Utilisateur à inviter : "))
 			invite(user,target)
