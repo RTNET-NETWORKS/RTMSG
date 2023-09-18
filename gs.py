@@ -376,7 +376,8 @@ def real_time(user):
 	server.close()
  
 def rtkey(user):
-	reponse = str(input("Stocker un mot de passe ou en consulter un ? S/C : "))
+	reponse = str(input("Stocker, consulter, ou supprimer un mot de passe ? S/C/R : "))
+	print("")
 	if reponse == "S" or reponse == "s":
 		name = str(input("Nom associé : "))
 		passwd = getpass.getpass("Mot de passe : ")
@@ -420,6 +421,45 @@ def rtkey(user):
 				decrypted_message = decrypt_message_with_private_key("private_key_"+user+".pem", result[0])
 				print("Mot de passe : "+decrypted_message)
 				c.execute("insert into operation values (DEFAULT, '"+user+"','rtkey_check_passwd','"+user+"',DEFAULT);")
+			else:
+				print("Mot de passe introuvable")
+				c.execute("insert into operation values (DEFAULT, '"+user+"','rtkey_bad_passwd','"+user+"',DEFAULT);")
+		c.execute("insert into operation values (DEFAULT, '"+user+"','rtkey_check_passwd','"+user+"',DEFAULT);")
+		db.commit()
+		c.close()
+		db.close()
+	elif reponse == "R" or reponse == "r":
+		print("Liste des mots de passes :")
+		print("")
+		db = sql_conn()
+		c = db.cursor()
+		c.execute("select name from passwd where user = '"+user+"';")
+		resultat = c.fetchall()
+		for i in resultat:
+			print(i[0])
+		print("")
+		choix = str(input("Choix : "))
+		print("")
+		c.execute("select clef from users where user = '"+user+"';")
+		result = c.fetchone()
+		if result:
+			public_key_encoded = result[0]
+			decoded_public_key = base64.b64decode(public_key_encoded)
+			public_key = serialization.load_pem_public_key(decoded_public_key, backend=default_backend())
+			c.execute("select password from passwd where user = '"+user+"' and name = '"+choix+"';")
+			result = c.fetchone()
+			if result:
+				decrypted_message = decrypt_message_with_private_key("private_key_"+user+".pem", result[0])
+				print("Mot de passe : "+decrypted_message)
+				c.execute("insert into operation values (DEFAULT, '"+user+"','rtkey_check_passwd','"+user+"',DEFAULT);")
+				choix2 = str(input("Supprimer ? O/N : "))
+				print("")
+				if choix2 == "O" or choix2 == "o":
+					c.execute("delete from passwd where user = '"+user+"' and name = '"+choix+"';")
+					c.execute("insert into operation values (DEFAULT, '"+user+"','rtkey_delete_passwd','"+user+"',DEFAULT);")
+					print("Mot de passe supprimé")
+				else:
+					print("Opération annulée")
 			else:
 				print("Mot de passe introuvable")
 				c.execute("insert into operation values (DEFAULT, '"+user+"','rtkey_bad_passwd','"+user+"',DEFAULT);")
