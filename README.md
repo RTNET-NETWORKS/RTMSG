@@ -3,6 +3,14 @@ Logiciels clients et serveurs pour utiliser le service RTMSG
 
 Cet utilitaire a pour but de permettre à l'utilisateur de se connecter et d'accéder à diverses ressources lui permettant d'utiliser la méthode de télécommunications alternative RTMSG.
 
+###### Fonctionnalités disponibles ######
+Envoi de courriels chiffrés
+Lecture et gestion des courriels reçus
+RTKEY, utilitaire de gestion de mots de passes
+Création de codes d'invitations pour nouveaux utilisateurs
+Gestion des permissions des utilisateurs
+Chiffrement et déchiffrement de messages avec des clefs
+
 ###### Paquets nécessaires #####
 Python3
 Python3-cryptography
