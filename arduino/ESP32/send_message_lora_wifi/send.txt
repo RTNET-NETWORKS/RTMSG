@@ -1,0 +1,106 @@
+#include <WiFi.h>
+#include <WebServer.h>
+#include <SPI.h>
+#include <LoRa.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+const char* ssid = "joseph";
+const char* password = "12345678";
+WebServer server(80);
+
+#define SCK 5
+#define MISO 19
+#define MOSI 27
+#define SS 18
+#define RST 14
+#define DIO0 26
+#define BAND 866E6
+
+#define OLED_SDA 4
+#define OLED_SCL 15 
+#define OLED_RST 16
+#define SCREEN_WIDTH 128 
+#define SCREEN_HEIGHT 64 
+
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RST);
+
+void setup() {
+  Serial.begin(115200);
+
+  pinMode(OLED_RST, OUTPUT);
+  digitalWrite(OLED_RST, LOW);
+  delay(20);
+  digitalWrite(OLED_RST, HIGH);
+
+  Wire.begin(OLED_SDA, OLED_SCL);
+  if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3c, false, false)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for(;;);
+  }
+  display.clearDisplay();
+  display.setTextColor(WHITE);
+  display.setTextSize(1);
+  display.setCursor(0,0);
+  display.print("LORA SENDER ");
+  display.display();
+
+  Serial.println("LoRa Sender Test");
+  SPI.begin(SCK, MISO, MOSI, SS);
+  LoRa.setPins(SS, RST, DIO0);
+  
+  if (!LoRa.begin(BAND)) {
+    Serial.println("Starting LoRa failed!");
+    while (1);
+  }
+  
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connecting to WiFi...");
+  }
+
+  server.on("/", HTTP_GET, handleRoot);
+  server.on("/send", HTTP_POST, handleSendLoRa);
+  server.begin();
+}
+
+void loop() {
+  server.handleClient();
+}
+
+void handleRoot() {
+  String html = "<html><body>";
+  html += "<h2>ESP32 LoRa Web Sender</h2>";
+  html += "<form action='/send' method='post'>Message: <input type='text' name='message'>";
+  html += "<input type='submit' value='Envoyer'></form>";
+  html += "</body></html>";
+  server.send(200, "text/html", html);
+}
+
+void handleSendLoRa() {
+  if (server.hasArg("message")) {
+    String message = server.arg("message");
+    sendLoRaMessage(message);
+    server.send(200, "text/plain", "Message sent: " + message);
+  } else {
+    server.send(400, "text/plain", "400: Invalid Request - Arg not found");
+  }
+}
+
+void sendLoRaMessage(String message) {
+  LoRa.beginPacket();
+  LoRa.print(message);
+  LoRa.endPacket();
+
+  display.clearDisplay();
+  display.setCursor(0,0);
+  display.println("LORA SENDER");
+  display.setCursor(0,20);
+  display.setTextSize(1);
+  display.print("Message sent:");
+  display.setCursor(0,30);
+  display.print(message);      
+  display.display();
+}

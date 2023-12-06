@@ -1,0 +1,70 @@
+#include <WiFi.h>
+#include <WebServer.h>
+#include <set>
+extern "C" {
+  #include "esp_wifi.h"
+}
+
+const char* mySSID = "Wifi gratuit Paris";  
+const int channel = 6;  
+const bool hideSSID = false;
+const int maxConnections = 2;
+
+WebServer server(80);
+
+std::set<String> connectedClients;  // Ensemble pour stocker les adresses MAC uniques
+
+void handleRoot() {
+  String html = "<h1>Liste des clients connectés :</h1><pre>";
+  
+  for (const String& mac : connectedClients) {
+    html += mac;
+    html += "<br>";
+  }
+  
+  html += "</pre>";
+  server.send(200, "text/html", html);
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  WiFi.mode(WIFI_AP);
+
+  if(WiFi.softAP(mySSID, NULL, channel, hideSSID, maxConnections)) { // Mot de passe supprimé
+    Serial.println("Point d'accès créé avec succès !");
+    Serial.print("Adresse IP du point d'accès : ");
+    Serial.println(WiFi.softAPIP());
+  } else {
+    Serial.println("Erreur lors de la création du point d'accès.");
+  }
+
+  server.on("/", handleRoot);
+  server.begin();
+}
+
+void loop() {
+  updateClientList();
+  server.handleClient();
+  delay(1000);  // Pause d'une seconde pour éviter une mise à jour trop fréquente
+}
+
+void updateClientList() {
+  wifi_sta_list_t wifi_sta_list;
+  tcpip_adapter_sta_list_t adapter_sta_list;
+
+  memset(&wifi_sta_list, 0, sizeof(wifi_sta_list));
+  memset(&adapter_sta_list, 0, sizeof(adapter_sta_list));
+  
+  esp_wifi_ap_get_sta_list(&wifi_sta_list);
+  tcpip_adapter_get_sta_list(&wifi_sta_list, &adapter_sta_list);
+  
+  for (int i = 0; i < wifi_sta_list.num; i++) {
+    String mac = "";
+    for (int j = 0; j < 6; j++) {
+      mac += String(wifi_sta_list.sta[i].mac[j], HEX);
+      if (j < 5) mac += ":";
+    }
+    connectedClients.insert(mac);  // Ajoute l'adresse MAC à l'ensemble (évite les doublons automatiquement)
+  }
+}
