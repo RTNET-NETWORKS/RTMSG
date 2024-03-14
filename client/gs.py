@@ -507,10 +507,7 @@ def invite(user,target):
 	db.close()
 
 
-def auth():
-	print("")
-	print("Bienvenue sur GS ! Identifiez-vous")
-	user = input(str("Utilisateur : "))
+def auth(user):
 	db = sql_conn()
 	c = db.cursor()
 	public_key = load_public_key_from_database(user)
@@ -529,7 +526,7 @@ def auth():
 					send = 1
 					generate_rsa_key_pair(user,user,send)
 					print("Votre paire de clef a été générée, relancement de la séquence d'authentification")
-					auth()
+					auth(user)
 				else:
 					print("Code invalide")
 					exit(2)
@@ -548,9 +545,6 @@ def auth():
 #	receive = input(str("Déchiffrez ce message avec votre clef privée"))
 #	resultat = private_key.decrypt(receive,padding.OAEP(mgf=padding.MGF1(algorithm=hashes.SHA256()),algorithm=hashes.SHA256(),label=None))
 	if public_key is not None:
-		print("Clef publique identifiée")
-		print("Vous allez devoir résoudre un challenge pour vous authentifier")
-		print("")
 		longueur_message = 32
 		message_to_encrypt = generer_message_aleatoire(longueur_message)
 		# Chiffrer le message avec la clé publique
@@ -566,15 +560,14 @@ def auth():
 			print("Erreur lors du déchiffrement :", e)
 			exit(2)
 		if decrypted_message == message_to_encrypt:
-			print("Authentification réussie !")
-			print("")
 			db = sql_conn()
 			c = db.cursor()
 			c.execute("insert into operation values (DEFAULT, '"+user+"','authentication',NULL,DEFAULT);")
 			db.commit()
 			c.close()
 			db.close()
-			dial(user)
+			logged = 1
+			return logged
 		else:
 			print("Authentification échouée !")
 			db = sql_conn()
@@ -583,7 +576,8 @@ def auth():
 			db.commit()
 			c.close()
 			db.close()
-			exit(2)
+			logged = 0
+			return logged
 	else:
 		print("Clef introuvable pour cet utilisateur")
 		exit(2)
@@ -628,7 +622,7 @@ def dial(user):
 			db.commit()
 			c.close()
 			db.close()
-			auth()
+			auth(user)
 		elif query == "rsa":
 			reponse = input(str("Générer une paire de clefs RSA pour un autre utilisateur et l'exporter dans la DB ? Ou générer une paire de clefs RSA pour vous-même ? (D/V) "))
 			print("")
@@ -733,4 +727,4 @@ def dial(user):
 			print("")
 			print("Commande inconnue")
 
-auth()
+#auth()

@@ -8,13 +8,31 @@ import gs
 import time
 import threading
 
+def assign_username():
+    username = entry.get()
+    return username
+
+def call_gs():
+    username = assign_username()
+    logged = gs.auth(username)
+    if logged:
+        message.config(text="Bienvenue "+username+" !")
+    else:
+        message.config(text="Impossible de vous authentifier")
+
 window = tk.Tk()
 window.title("RTGUI for RTMSG")
 window.geometry("400x400")
 
+entry = tk.Entry(window)
+entry.pack()
+username = entry.get()
+
+message = tk.Label(window, text="")
+
 user = tk.StringVar()
-#launch = tk.Button(window, text="Authenticate", command=gs.auth)
-#launch.pack()
+launch = tk.Button(window, text="Authenticate", command=call_gs)
+launch.pack()
 
 window.mainloop()
 
