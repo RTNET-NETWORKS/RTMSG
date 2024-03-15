@@ -16,6 +16,8 @@ entry = tk.Entry(window)
 entry.pack()
 username = entry.get()
 
+message = tk.Label(window, text="")
+
 user = tk.StringVar()
 
 
@@ -27,18 +29,18 @@ def call_gs():
     username = assign_username()
     logged = gs.auth(username)
     if logged:
-        message = tk.Label(window, text="Bienvenue "+username+" !")
+        user_gui()
+        message.config(text="Bienvenue "+username+" !")
         message.pack()
-        time.sleep(5)
         user_gui()
     else:
-        message = tk.Label(window, text="Impossible de vous authentifier !")
+        message.config(text="Impossible de vous authentifier !")
         message.pack()
 
 def user_gui():
     launch.pack_forget()
-    message.pack_forget()
     entry.pack_forget()
+    message.pack_forget()
 
 launch = tk.Button(window, text="Authenticate", command=call_gs)
 launch.pack()

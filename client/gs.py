@@ -580,7 +580,8 @@ def auth(user):
 			return logged
 	else:
 		print("Clef introuvable pour cet utilisateur")
-		exit(2)
+		logged = 0
+		return logged
 	c.close()
 	db.close()
 
