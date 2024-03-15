@@ -464,12 +464,12 @@ def rtkey(user):
 		db.close()
   
 def invite(user,target):
-	print("")
 	# Vérifier le niveau de permission de l'utilisateur
 	db = sql_conn()
 	c = db.cursor()
 	c.execute("select level from admin where user = '"+user+"';")
 	result = c.fetchone()
+	error = 0
 	if result:
 		if int(result[0]) >= 3:
 			# Vérifier si l'utilisateur existe déjà
@@ -478,28 +478,37 @@ def invite(user,target):
 			if result:
 				print("Utilisateur déjà existant")
 				c.execute("insert into operation values (DEFAULT, '"+user+"','bad_invitation','"+target+"',DEFAULT);")
+				error = 1
 			else:
 				c.execute("select target from invitation where target = '"+target+"';")
 				result = c.fetchone()
 				if result:
 					print("Utilisateur déjà invité")
 					c.execute("insert into operation values (DEFAULT, '"+user+"','bad_invitation','"+target+"',DEFAULT);")
+					error = 2
 				else:
         			# Générer un code d'invitation aléatoire
 					code = generer_message_aleatoire(6)
 					c.execute("insert into invitation values (DEFAULT,'"+user+"','"+target+"','"+code+"')")
 					c.execute("insert into operation values (DEFAULT, '"+user+"','invitation','"+target+"',DEFAULT);")
-					print("Code d'invitation créé : "+code)
+					final = "Code d'invitation créé : "+code
+					db.commit()
+					c.close()
+					db.close()
+					return final
 		else:
 			print("Opération refusée")
 			c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
+			error = 3
 	else:
 		print("Opération refusée")
 		c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
+		error = 4
 	print("")
 	db.commit()
 	c.close()
 	db.close()
+	return error
 
 
 def auth(user):

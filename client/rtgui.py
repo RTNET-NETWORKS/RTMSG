@@ -79,6 +79,33 @@ def read_message_gui():
     check_button.pack()
     gui_button.pack()
 
+def invite_gui():
+    clear_gui()
+    username = assign_username()
+    target_entry = tk.Entry(window, text="User to invite")
+    target_entry.pack()
+    
+
+    def send_invite_button():
+        clear_gui()
+        target = target_entry.get()
+        error = gs.invite(username,target)
+        message = tk.Label(window, text="")
+        return_button = tk.Button(window, text="Return to main menu", command=user_gui)
+        if error == 1:
+            message.config(text="User already exists !")
+        elif error == 2:
+            message.config(text="User had already been invited !")
+        elif error == 3 or error == 4:
+            message.config(text="Forbidden")
+        else:
+            message.config(text=error)
+        message.pack()
+        return_button.pack()
+
+    send_button = tk.Button(window, text="Send invitation", command=send_invite_button)
+    send_button.pack()
+
 def exit_rtmsg():
     exit(0)
 
@@ -86,10 +113,12 @@ def user_gui():
     clear_gui()
     send_button = tk.Button(window, text="Send message", command=send_message_gui)
     read_button = tk.Button(window, text="Read message", command=read_message_gui)
+    invite_button = tk.Button(window, text="Invite a user", command=invite_gui)
     logout_button = tk.Button(window, text="Logout", command=login)
     exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
     send_button.pack()
     read_button.pack()
+    invite_button.pack()
     logout_button.pack()
     exit_button.pack()
 
@@ -97,6 +126,7 @@ def login():
     clear_gui()
     entry.pack()
     launch.pack()
+    exit_button.pack()
 
 window = tk.Tk()
 window.title("RTGUI for RTMSG")
