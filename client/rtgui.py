@@ -4,6 +4,7 @@
 
 import tkinter as tk
 from tkinter import *
+from tkinter import ttk
 import gs
 import time
 import threading
@@ -191,6 +192,35 @@ def drop_user_gui():
     user_target.pack()
     user_button.pack()
 
+def rtkey_gui():
+    clear_gui()
+    username = assign_username()
+    options = ["Store new password","Check password","Remove password"]
+    choice_entry = ttk.Combobox(window, values=options)
+    label = tk.Label(window, text="What are you planning to do ?")
+    choice = choice_entry.get()
+
+    def rtkey_button():
+        clear_gui()
+        error = gs.rtkey(username,choice)
+        message = tk.Label(window, text="")
+        if error == 0:
+            message.config(text="Password has been stored")
+    
+    if choice == "Store new password":
+        clear_gui()
+        name_entry = tk.Entry(window, text="Name associated")
+        name_label = tk.Label(window, text="Name associated")
+        password_entry = tk.Entry(window, text="Password")
+        password_label = tk.Entry(window, text="Password")
+        send_button = tk.Button(window, text="Send password", command=rtkey_button)
+        name_entry.pack()
+        name_label.pack()
+        password_entry.pack()
+        password_label()
+        send_button.pack()
+
+
 def exit_rtmsg():
     exit(0)
 
@@ -201,6 +231,7 @@ def user_gui():
     invite_button = tk.Button(window, text="Invite a user", command=invite_gui)
     grant_button = tk.Button(window, text="Grant user", command=grant_user_gui)
     drop_button = tk.Button(window, text="Drop user", command=drop_user_gui)
+    rtkey_button = tk.Button(window, text="RTKEY", command=rtkey_gui)
     logout_button = tk.Button(window, text="Logout", command=login)
     exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
     send_button.pack()
@@ -208,6 +239,7 @@ def user_gui():
     invite_button.pack()
     grant_button.pack()
     drop_button.pack()
+    rtkey_button.pack()
     logout_button.pack()
     exit_button.pack()
 
