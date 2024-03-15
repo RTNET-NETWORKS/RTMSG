@@ -224,7 +224,6 @@ def send_message(user,target,message):
 	c.execute("select clef from users where user = '"+target+"';")
 	result = c.fetchone()
 	if result is None:
-		print("Utilisateur inconnu")
 		c.execute("insert into operation values (DEFAULT, '"+user+"','bad_target','"+target+"',DEFAULT);")
 		unknown_user = 1
 		return unknown_user
@@ -233,8 +232,7 @@ def send_message(user,target,message):
 		decoded_public_key = base64.b64decode(public_key_encoded)
 		public_key = serialization.load_pem_public_key(decoded_public_key, backend=default_backend())
 		encrypted_message = encrypt_message_with_public_key(public_key, message)
-		print("Message chiffré :", base64.b64encode(encrypted_message).decode())
-		print("")
+#		print("Message chiffré :", base64.b64encode(encrypted_message).decode())
 		c.execute("insert into operation values (DEFAULT, '"+user+"','send_message','"+target+"',DEFAULT);")
 		c.execute("insert into messages values (DEFAULT, '"+user+"','"+target+"','"+base64.b64encode(encrypted_message).decode()+"',DEFAULT);")
 	db.commit()
@@ -245,8 +243,6 @@ def read_message(user,read):
 	db = sql_conn()
 	c = db.cursor()
 	if not read:
-		print("Lecture des messages non-lus")
-		print("")
 		c.execute("select user from users where user = '"+user+"';")
 		result = c.fetchone()
 		if result:
@@ -258,15 +254,11 @@ def read_message(user,read):
 				if result:
 					message_decode = decrypt_message_with_private_key("private_key_"+user+".pem", result[3])
 					final = "Message de "+result[1]+" : "+message_decode
-					print("")
 					c.execute("update messages set message_read = 1 where id = "+str(result[0])+";")
 					messages.append(final)
 				else:
-					print("Aucun message non-lu")
 					fini = 1
 	else:
-		print("Lecture des messages lus")
-		print("")
 		c.execute("select user from users where user = '"+user+"';")
 		result = c.fetchone()
 		messages = []
@@ -572,7 +564,6 @@ def auth(user):
 			logged = 1
 			return logged
 		else:
-			print("Authentification échouée !")
 			db = sql_conn()
 			c = db.cursor()
 			c.execute("insert into operation values (DEFAULT, '"+user+"','failed_authentication',NULL,DEFAULT);")
@@ -582,7 +573,6 @@ def auth(user):
 			logged = 0
 			return logged
 	else:
-		print("Clef introuvable pour cet utilisateur")
 		logged = 0
 		return logged
 	c.close()

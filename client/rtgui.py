@@ -8,17 +8,6 @@ import gs
 import time
 import threading
 
-window = tk.Tk()
-window.title("RTGUI for RTMSG")
-window.geometry("600x400")
-
-entry = tk.Entry(window)
-entry.pack()
-
-message = tk.Label(window, text="")
-
-user = tk.StringVar()
-
 
 def assign_username():
     username = entry.get()
@@ -27,13 +16,15 @@ def assign_username():
 def call_gs():
     username = assign_username()
     logged = gs.auth(username)
+    clear_gui()
     if logged:
-        message.config(text="Bienvenue "+username+" !")
+        message.config(text="Hello "+username+" !")
         message.pack()
         user_gui()
     else:
-        message.config(text="Impossible de vous authentifier !")
+        message.config(text="Authentication has failed !")
         message.pack()
+        login()
 
 def clear_gui():
     for widget in window.winfo_children():
@@ -55,7 +46,13 @@ def send_message_gui():
     def send_message_button():
         target = user_entry.get()
         message_to_send = message_entry.get()
-        gs.send_message(username, target, message_to_send)
+        result = gs.send_message(username, target, message_to_send)
+        if result == 1:
+            clear_gui()
+            error_label = tk.Label(window, text="Unknown user !")
+            error_return = tk.Button(window, text="Return to main menu", command=user_gui)
+            error_label.pack()
+            error_return.pack()
         user_gui()
     
     # Création du bouton en utilisant une fonction lambda pour encapsuler l'appel à send_message
@@ -89,13 +86,29 @@ def user_gui():
     clear_gui()
     send_button = tk.Button(window, text="Send message", command=send_message_gui)
     read_button = tk.Button(window, text="Read message", command=read_message_gui)
+    logout_button = tk.Button(window, text="Logout", command=login)
     exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
     send_button.pack()
     read_button.pack()
+    logout_button.pack()
     exit_button.pack()
 
+def login():
+    clear_gui()
+    entry.pack()
+    launch.pack()
+
+window = tk.Tk()
+window.title("RTGUI for RTMSG")
+window.geometry("600x600")
+
+message = tk.Label(window, text="")
+
+entry = tk.Entry(window, text="Login")
 launch = tk.Button(window, text="Authenticate", command=call_gs)
+entry.pack()
 launch.pack()
 
 window.mainloop()
+login()
 
