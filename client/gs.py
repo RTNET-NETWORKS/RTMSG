@@ -334,13 +334,16 @@ def decrypt_message_with_private_key(private_key_path, encrypted_message):
 def drop_user(user,target):
 	db = sql_conn()
 	c = db.cursor()
-	print("")
 	c.execute("select level from admin where user = '"+user+"';")
 	result = c.fetchone()
 	if result is None:
 		print("Opération refusée")
 		c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
-		dial(user)
+		db.commit()
+		c.close()
+		db.close()
+		error = 2
+		return error
 	else:
 		if int(result[0]) == 4:
 			c.execute("select user from users where user = '"+target+"';")
@@ -352,25 +355,45 @@ def drop_user(user,target):
 					c.execute("delete from users where user = '"+target+"';")
 					c.execute("insert into operation values (DEFAULT, '"+user+"','drop_user','"+target+"',DEFAULT);")
 					print("Utilisateur supprimé")
+					db.commit()
+					c.close()
+					db.close()
+					error = 0
+					return error
 				elif int(result[0]) == 4:
 					print("Opération refusée : vous ne pouvez pas supprimer un administrateur")
 					c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
-					dial(user)
+					db.commit()
+					c.close()
+					db.close()
+					error = 2
+					return error
 				else:
 					c.execute("delete from users where user = '"+target+"';")
 					c.execute("delete from admin where user = '"+target+"';")
 					c.execute("insert into operation values (DEFAULT, '"+user+"','drop_user','"+target+"',DEFAULT);")
 					print("Utilisateur supprimé")
+					db.commit()
+					c.close()
+					db.close()
+					error = 0
+					return error
 			else:
 				print("Utilisateur inconnu")
 				c.execute("insert into operation values (DEFAULT, '"+user+"','bad_target','"+target+"',DEFAULT);")
+				db.commit()
+				c.close()
+				db.close()
+				error = 1
+				return error
 		else:
 			print("Opération refusée")
 			c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
-	db.commit()
-	c.close()
-	db.close()
-	print("")
+			db.commit()
+			c.close()
+			db.close()
+			error = 2
+			return error
 
 def real_time(user):
 	server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -554,6 +577,7 @@ def verify_invite(user,invite):
 			send = 1
 			generate_rsa_key_pair(user,user,send)
 			error = 0
+			db.commit()
 			c.close()
 			db.close()
 			return error

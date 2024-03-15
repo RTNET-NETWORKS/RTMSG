@@ -165,6 +165,32 @@ def grant_user_gui():
     user_level.pack()
     user_button.pack()
 
+def drop_user_gui():
+    clear_gui()
+    user_target = tk.Entry(window, text="User")
+    user_label = tk.Label(window, text="User to drop")
+    username = assign_username()
+
+    def drop_user_button():
+        clear_gui()
+        target = user_target.get()
+        error = gs.drop_user(username,target)
+        message = tk.Label(window, text="")
+        if error == 0:
+            message.config(text="User has been dropped")
+        elif error == 1:
+            message.config(text="Unknown user")
+        elif error == 2:
+            message.config(text="Forbidden")
+        return_button = tk.Button(window, text="Return to main menu", command=user_gui)
+        message.pack()
+        return_button.pack()
+
+    user_button = tk.Button(window, text="Drop user", command=drop_user_button)
+    user_label.pack()
+    user_target.pack()
+    user_button.pack()
+
 def exit_rtmsg():
     exit(0)
 
@@ -174,12 +200,14 @@ def user_gui():
     read_button = tk.Button(window, text="Read message", command=read_message_gui)
     invite_button = tk.Button(window, text="Invite a user", command=invite_gui)
     grant_button = tk.Button(window, text="Grant user", command=grant_user_gui)
+    drop_button = tk.Button(window, text="Drop user", command=drop_user_gui)
     logout_button = tk.Button(window, text="Logout", command=login)
     exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
     send_button.pack()
     read_button.pack()
     invite_button.pack()
     grant_button.pack()
+    drop_button.pack()
     logout_button.pack()
     exit_button.pack()
 
