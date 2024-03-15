@@ -62,14 +62,35 @@ def send_message_gui():
     user_button = tk.Button(window, text="Send to this user", command=send_message_button)
     user_button.pack()
 
+def read_message_gui():
+    clear_gui()
+    label_array = tk.Label(window, text="")
+    username = assign_username()
+    read_state = tk.BooleanVar()
+    case = tk.Checkbutton(window, text="Red messages", variable=read_state)
+    case.pack()
+
+    def read_message_button():
+        read = read_state.get()
+        array = gs.read_message(username,read)
+        array_str = "\n".join(array)
+        label_array.config(text=array_str)
+
+    check_button = tk.Button(window, text="Check messages", command=read_message_button)
+    gui_button = tk.Button(window, text="Return to main menu", command=user_gui)
+    check_button.pack()
+    gui_button.pack()
+
 def exit_rtmsg():
     exit(0)
 
 def user_gui():
     clear_gui()
     send_button = tk.Button(window, text="Send message", command=send_message_gui)
+    read_button = tk.Button(window, text="Read message", command=read_message_gui)
     exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
     send_button.pack()
+    read_button.pack()
     exit_button.pack()
 
 launch = tk.Button(window, text="Authenticate", command=call_gs)

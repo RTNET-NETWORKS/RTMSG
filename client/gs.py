@@ -241,18 +241,17 @@ def send_message(user,target,message):
 	c.close()
 	db.close()
 
-def read_message(user):
-	reponse = input(str("Lire les messages non-lus ou lus ? N/L : "))
-	print("")
+def read_message(user,read):
 	db = sql_conn()
 	c = db.cursor()
-	if reponse == "N" or reponse == "n":
+	if not read:
 		print("Lecture des messages non-lus")
 		print("")
 		c.execute("select user from users where user = '"+user+"';")
 		result = c.fetchone()
 		if result:
 			fini = 0
+			messages = []
 			while fini != 1:
 				c.execute("select * from messages where target = '"+user+"' and message_read = 0;")
 				result = c.fetchone()
@@ -261,6 +260,7 @@ def read_message(user):
 					print("Message de "+result[1]+" : "+message_decode)
 					print("")
 					c.execute("update messages set message_read = 1 where id = "+str(result[0])+";")
+					messages.append(message_decode)
 				else:
 					print("Aucun message non-lu")
 					fini = 1
@@ -269,6 +269,7 @@ def read_message(user):
 		print("")
 		c.execute("select user from users where user = '"+user+"';")
 		result = c.fetchone()
+		messages = []
 		if result:
 			c.execute("select * from messages where target = '"+user+"' and message_read = 1;")
 			result = c.fetchall()
@@ -276,10 +277,11 @@ def read_message(user):
 				for message_individuel in result:
 					message_decode = decrypt_message_with_private_key("private_key_"+user+".pem", message_individuel[3])
 					print("Message de "+message_individuel[1]+" : "+message_decode)
-	print("")
+					messages.append(message_decode)
 	db.commit()
 	c.close()
 	db.close()
+	return messages
 
 def decrypt_message_with_private_key(private_key_path, encrypted_message):
     # Charger la clé privée depuis le fichier PEM
