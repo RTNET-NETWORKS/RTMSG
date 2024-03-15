@@ -257,10 +257,10 @@ def read_message(user,read):
 				result = c.fetchone()
 				if result:
 					message_decode = decrypt_message_with_private_key("private_key_"+user+".pem", result[3])
-					print("Message de "+result[1]+" : "+message_decode)
+					final = "Message de "+result[1]+" : "+message_decode
 					print("")
 					c.execute("update messages set message_read = 1 where id = "+str(result[0])+";")
-					messages.append(message_decode)
+					messages.append(final)
 				else:
 					print("Aucun message non-lu")
 					fini = 1
@@ -276,8 +276,8 @@ def read_message(user,read):
 			if result:
 				for message_individuel in result:
 					message_decode = decrypt_message_with_private_key("private_key_"+user+".pem", message_individuel[3])
-					print("Message de "+message_individuel[1]+" : "+message_decode)
-					messages.append(message_decode)
+					final ="Message de "+message_individuel[1]+" : "+message_decode
+					messages.append(final)
 	db.commit()
 	c.close()
 	db.close()

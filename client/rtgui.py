@@ -75,6 +75,7 @@ def read_message_gui():
         array = gs.read_message(username,read)
         array_str = "\n".join(array)
         label_array.config(text=array_str)
+        label_array.pack()
 
     check_button = tk.Button(window, text="Check messages", command=read_message_button)
     gui_button = tk.Button(window, text="Return to main menu", command=user_gui)
