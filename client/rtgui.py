@@ -14,7 +14,6 @@ window.geometry("600x400")
 
 entry = tk.Entry(window)
 entry.pack()
-username = entry.get()
 
 message = tk.Label(window, text="")
 
@@ -29,7 +28,6 @@ def call_gs():
     username = assign_username()
     logged = gs.auth(username)
     if logged:
-        user_gui()
         message.config(text="Bienvenue "+username+" !")
         message.pack()
         user_gui()
@@ -37,10 +35,38 @@ def call_gs():
         message.config(text="Impossible de vous authentifier !")
         message.pack()
 
+def clear_gui():
+    for widget in window.winfo_children():
+        widget.pack_forget()
+
+def send_message_gui():
+    clear_gui()
+    username = assign_username()
+    user_label = tk.Label(window, text="User")
+    user_entry = tk.Entry(window)
+    message_label = tk.Label(window, text="Message")
+    message_entry = tk.Entry(window)
+    user_label.pack()
+    user_entry.pack()
+    message_label.pack()
+    message_entry.pack()
+    
+    # Fonction à exécuter lorsque le bouton est cliqué
+    def send_message_button():
+        target = user_entry.get()
+        message_to_send = message_entry.get()
+        gs.send_message(username, target, message_to_send)
+    
+    # Création du bouton en utilisant une fonction lambda pour encapsuler l'appel à send_message
+    user_button = tk.Button(window, text="Send to this user", command=send_message_button)
+    user_button.pack()
+
 def user_gui():
     launch.pack_forget()
     entry.pack_forget()
     message.pack_forget()
+    send_button = tk.Button(window, text="Send message", command=send_message_gui)
+    send_button.pack()
 
 launch = tk.Button(window, text="Authenticate", command=call_gs)
 launch.pack()

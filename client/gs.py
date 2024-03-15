@@ -215,18 +215,19 @@ def user_grant(user,user_g):
 	db.close()
 	print("")
 
-def send_message(user):
-	target = input(str("Destinataire : "))
-	message = input(str("Message : "))
-	print("")
+def send_message(user,target,message):
 	db = sql_conn()
 	c = db.cursor()
+	print(user)
+	print(target)
+	print(message)
 	c.execute("select clef from users where user = '"+target+"';")
 	result = c.fetchone()
 	if result is None:
 		print("Utilisateur inconnu")
 		c.execute("insert into operation values (DEFAULT, '"+user+"','bad_target','"+target+"',DEFAULT);")
-		dial(user)
+		unknown_user = 1
+		return unknown_user
 	else:
 		public_key_encoded = result[0]
 		decoded_public_key = base64.b64decode(public_key_encoded)
