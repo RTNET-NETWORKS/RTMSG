@@ -17,14 +17,39 @@ def call_gs():
     username = assign_username()
     logged = gs.auth(username)
     clear_gui()
-    if logged:
+    if logged == 0:
         message.config(text="Hello "+username+" !")
-        message.pack()
         user_gui()
-    else:
+    elif logged == 1:
         message.config(text="Authentication has failed !")
-        message.pack()
         login()
+    elif logged == 2:
+        invite_check_gui()
+    message.pack()
+
+def invite_check_gui():
+    clear_gui()
+    username = assign_username()
+    invite_entry = tk.Entry(window, text="Code d'invitation")
+
+    def invite_check_button():
+        invite = invite_entry.get()
+        message = tk.Label(window, text="")
+        error = gs.verify_invite(username,invite)
+        clear_gui()
+        if error == 0:
+            message.config(text="You have been registered ! Your keys have been generated")
+        if error == 1:
+            message.config(text="Code is incorrect")
+        if error == 2:
+            message.config(text="Error")
+        return_button = tk.Button(window, text="Return to main menu", command=login)
+        message.pack()
+        return_button.pack()
+
+    invite_button = tk.Button(window, text="Check activation code", command=invite_check_button)
+    invite_entry.pack()
+    invite_button.pack()
 
 def clear_gui():
     for widget in window.winfo_children():

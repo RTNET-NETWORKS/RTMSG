@@ -510,6 +510,33 @@ def invite(user,target):
 	db.close()
 	return error
 
+def verify_invite(user,invite):
+	db = sql_conn()
+	c = db.cursor()
+	c.execute("select code from invitation where target = '"+user+"';")
+	result = c.fetchone()
+	if result:
+		if result[0] == invite:
+			print("Code valide")
+			c.execute("delete from invitation where target = '"+user+"';")
+			send = 1
+			generate_rsa_key_pair(user,user,send)
+			error = 0
+			c.close()
+			db.close()
+			return error
+		else:
+			print("Code invalide")
+			error = 1
+			c.close()
+			db.close()
+			return error
+	else:
+		error = 2
+		c.close()
+		db.close()
+		return 2
+
 
 def auth(user):
 	db = sql_conn()
@@ -520,23 +547,8 @@ def auth(user):
 		result = c.fetchone()
 		if result:
 			print("Utilisateur invité")
-			code = input(str("Code d'invitation : "))
-			c.execute("select code from invitation where target = '"+user+"';")
-			result = c.fetchone()
-			if result:
-				if result[0] == code:
-					print("Code valide")
-					c.execute("delete from invitation where target = '"+user+"';")
-					send = 1
-					generate_rsa_key_pair(user,user,send)
-					print("Votre paire de clef a été générée, relancement de la séquence d'authentification")
-					auth(user)
-				else:
-					print("Code invalide")
-					exit(2)
-			else:
-				print("Le code n'existe pas")
-				exit(2)
+			logged = 2
+			return logged
 #		print(f"Clé publique introuvable pour l'utilisateur '{user}'.")
 #	c.execute("select clef from users where user = '"+user+"';")
 #	result = c.fetchone()
@@ -570,7 +582,7 @@ def auth(user):
 			db.commit()
 			c.close()
 			db.close()
-			logged = 1
+			logged = 0
 			return logged
 		else:
 			db = sql_conn()
@@ -579,10 +591,10 @@ def auth(user):
 			db.commit()
 			c.close()
 			db.close()
-			logged = 0
+			logged = 1
 			return logged
 	else:
-		logged = 0
+		logged = 1
 		return logged
 	c.close()
 	db.close()
