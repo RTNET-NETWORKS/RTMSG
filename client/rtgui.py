@@ -106,8 +106,10 @@ message = tk.Label(window, text="")
 
 entry = tk.Entry(window, text="Login")
 launch = tk.Button(window, text="Authenticate", command=call_gs)
+exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
 entry.pack()
 launch.pack()
+exit_button.pack()
 
 window.mainloop()
 login()
