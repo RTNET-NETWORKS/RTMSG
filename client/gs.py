@@ -172,25 +172,32 @@ def encrypt_message_with_public_key(public_key, message):
 	)
 	return encrypted_message
 
-def user_grant(user,user_g):
+def user_grant(user,user_g,level):
 	db = sql_conn()
 	c = db.cursor()
+	user = str(user)
 	c.execute("select user from users where user = '"+user_g+"';")
-	print("")
+	error = 0
 	if not c.fetchone():
 		print("Utilisateur inconnu")
 		c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_g+"',DEFAULT);")
-		dial()
+		db.commit()
+		c.close()
+		db.close()
+		error = 1
+		return error
 	c.execute("select user, level from admin where user = '"+user+"';")
 	result = c.fetchone()
 	if result:
-		level = input(str("Niveau d'accès (1-3) : "))
-		print("")
 		levelint = int(level)
 		if levelint < 1 or levelint > 3:
 			print("Opération refusée : niveau d'accès invalide")
 			c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_g+"',DEFAULT);")
-			dial()
+			db.commit()
+			c.close()
+			db.close()
+			error = 2
+			return error
 		if int(result[1]) == 4:
 			c.execute("select user, level from admin where user = '"+user_g+"';")
 			result = c.fetchone()
@@ -198,18 +205,43 @@ def user_grant(user,user_g):
 				if int(result[1]) == 4:
 					print("Opération refusée : l'utilisateur est déjà administrateur")
 					c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_g+"',DEFAULT);")
+					db.commit()
+					c.close()
+					db.close()
+					error = 2
+					return error
 				else:
 					c.execute("update admin set level = "+level+" where user = '"+user_g+"';")
 					c.execute("insert into operation values (DEFAULT, '"+user+"','grant','"+user_g+"',DEFAULT);")
+					db.commit()
+					c.close()
+					db.close()
+					error = 0
+					return error
 			else:
 				c.execute("insert into admin values (DEFAULT,'"+user_g+"',"+level+",DEFAULT,DEFAULT);")
 				c.execute("insert into operation values (DEFAULT, '"+user+"','grant','"+user_g+"',DEFAULT);")
+				db.commit()
+				c.close()
+				db.close()
+				error = 0
+				return error
 		else:
 			print("Opération refusée")
 			c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_g+"',DEFAULT);")
+			db.commit()
+			c.close()
+			db.close()
+			error = 2
+			return error
 	else:
 		print("Opération refusée")
 		c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_g+"',DEFAULT);")
+		db.commit()
+		c.close()
+		db.close()
+		error = 2
+		return error
 	db.commit()
 	c.close()
 	db.close()

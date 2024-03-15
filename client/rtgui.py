@@ -131,6 +131,40 @@ def invite_gui():
     send_button = tk.Button(window, text="Send invitation", command=send_invite_button)
     send_button.pack()
 
+def grant_user_gui():
+    clear_gui()
+    user_label = tk.Label(window, text="User to grant")
+    user_entry = tk.Entry(window, text="User to grant")
+    level_label = tk.Label(window, text="Level to grant")
+    user_level = tk.Entry(window, text="Level")
+
+    def grant_user_button():
+        user_target = user_entry.get()
+        level_target = user_level.get()
+        level_target = str(level_target)
+        username = assign_username()
+        error = gs.user_grant(username,user_target,level_target)
+        message = tk.Label(window, text="")
+        return_button = tk.Button(window, text="Return to main menu", command=user_gui)
+        if error == 0:
+            clear_gui()
+            message.config(text="User has been granted !")
+        elif error == 1:
+            clear_gui()
+            message.config(text="Unknown user")
+        elif error == 2:
+            clear_gui()
+            message.config(text="Forbidden")
+        message.pack()
+        return_button.pack()
+
+    user_button = tk.Button(window, text="Grant user", command=grant_user_button)
+    user_label.pack()
+    user_entry.pack()
+    level_label.pack()
+    user_level.pack()
+    user_button.pack()
+
 def exit_rtmsg():
     exit(0)
 
@@ -139,11 +173,13 @@ def user_gui():
     send_button = tk.Button(window, text="Send message", command=send_message_gui)
     read_button = tk.Button(window, text="Read message", command=read_message_gui)
     invite_button = tk.Button(window, text="Invite a user", command=invite_gui)
+    grant_button = tk.Button(window, text="Grant user", command=grant_user_gui)
     logout_button = tk.Button(window, text="Logout", command=login)
     exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
     send_button.pack()
     read_button.pack()
     invite_button.pack()
+    grant_button.pack()
     logout_button.pack()
     exit_button.pack()
 
