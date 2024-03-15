@@ -56,17 +56,21 @@ def send_message_gui():
         target = user_entry.get()
         message_to_send = message_entry.get()
         gs.send_message(username, target, message_to_send)
+        user_gui()
     
     # Création du bouton en utilisant une fonction lambda pour encapsuler l'appel à send_message
     user_button = tk.Button(window, text="Send to this user", command=send_message_button)
     user_button.pack()
 
+def exit_rtmsg():
+    exit(0)
+
 def user_gui():
-    launch.pack_forget()
-    entry.pack_forget()
-    message.pack_forget()
+    clear_gui()
     send_button = tk.Button(window, text="Send message", command=send_message_gui)
+    exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
     send_button.pack()
+    exit_button.pack()
 
 launch = tk.Button(window, text="Authenticate", command=call_gs)
 launch.pack()
