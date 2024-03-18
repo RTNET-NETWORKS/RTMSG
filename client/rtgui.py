@@ -263,6 +263,36 @@ def file_uncipher_gui():
         message.pack()
         return_button.pack()
 
+def aes_cipher_gui():
+    username = assign_username()
+    file = filedialog.askopenfilename(initialdir="/", title="Select a file")
+    if file:
+        clear_gui()
+        error = gs.hybrid_ciphering(username,file)
+        message = tk.Label(window, text="")
+        return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
+        if error == 0:
+            message.config(text="Your encrypted file has been saved in "+file+"_encrypted !")
+        elif error == 1:
+            message.config(text="An error occured")
+        message.pack()
+        return_button.pack()
+
+def aes_uncipher_gui():
+    username = assign_username()
+    file = filedialog.askopenfilename(initialdir="/", title="Select a file")
+    if file:
+        clear_gui()
+        error = gs.hybrid_unciphering(username,file)
+        message = tk.Label(window, text="")
+        return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
+        if error == 0:
+            message.config(text="Your encrypted file has been saved in "+file+"_encrypted !")
+        elif error == 1:
+            message.config(text="An error occured")
+        message.pack()
+        return_button.pack()
+
 def exit_rtmsg():
     exit(0)
 
@@ -274,8 +304,10 @@ def user_gui():
     grant_button = tk.Button(window, text="Grant user", command=grant_user_gui)
     drop_button = tk.Button(window, text="Drop user", command=drop_user_gui)
     rtkey_button = tk.Button(window, text="RTKEY (WIP)", command=rtkey_gui)
-    file_button = tk.Button(window, text="Ciphering files", command=file_cipher_gui)
-    unfile_button = tk.Button(window, text="Unciphering files", command=file_uncipher_gui)
+    file_button = tk.Button(window, text="Ciphering files (legacy)", command=file_cipher_gui)
+    unfile_button = tk.Button(window, text="Unciphering files (legacy)", command=file_uncipher_gui)
+    aes_cipher_button = tk.Button(window, text="Ciphering files", command=aes_cipher_gui)
+    aes_uncipher_button = tk.Button(window, text="Unciphering files", command=aes_uncipher_gui)
     logout_button = tk.Button(window, text="Logout", command=login)
     exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
     send_button.pack()
@@ -286,6 +318,8 @@ def user_gui():
     rtkey_button.pack()
     file_button.pack()
     unfile_button.pack()
+    aes_cipher_button.pack()
+    aes_uncipher_button.pack()
     logout_button.pack()
     exit_button.pack()
 

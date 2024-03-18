@@ -11,7 +11,10 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import getpass
+import os
 import hashlib
 import pymysql
 import csv
@@ -472,7 +475,6 @@ def file_uncipher(user,file):
             password=None,
             backend=default_backend()
         )
-
 	bloc_size = 256
 	clear_data = b""
 	with open(file, "rb") as f:
@@ -584,7 +586,95 @@ def rtkey(user,choice,name,passwd):
 		db.commit()
 		c.close()
 		db.close()
-  
+
+def generate_aes_key():
+	return os.urandom(32)
+
+def aes_cipher(key,data):
+	iv = os.urandom(16)
+	cipher = Cipher(algorithms.AES(key), modes.CFB(iv), backend=default_backend())
+	encryptor = cipher.encryptor()
+	encrypted_data = encryptor.update(data) + encryptor.finalize()
+	return iv + encrypted_data
+
+def aes_uncipher(key,encrypted_data):
+    iv = encrypted_data[:16]
+    encrypted_data = encrypted_data[16:]
+    cipher = Cipher(algorithms.AES(key), modes.CFB(iv), backend=default_backend())
+    decryptor = cipher.decryptor()
+    data = decryptor.update(encrypted_data) + decryptor.finalize()
+    return data
+
+def hybrid_ciphering(user,file):
+	secret_key = generate_aes_key()
+	db = sql_conn()
+	c = db.cursor()
+	c.execute("select clef from users where user = '"+user+"';")
+	result = c.fetchone()
+	if result is None:
+		c.execute("insert into operation values (DEFAULT, '"+user+"','bad_target','"+user+"',DEFAULT);")
+		db.commit()
+		c.close()
+		db.close()
+		unknown_user = 1
+		return unknown_user
+	else:
+		public_key_encoded = result[0]
+		decoded_public_key = base64.b64decode(public_key_encoded)
+		public_key = serialization.load_pem_public_key(decoded_public_key, backend=default_backend())
+	
+	with open(file, "rb") as f:
+		clear_data = f.read()
+	aes_data = aes_cipher(secret_key,clear_data)
+
+	secret_key_encrypted = public_key.encrypt(
+		secret_key,
+		padding.OAEP(
+			mgf=padding.MGF1(algorithm=hashes.SHA256()),
+			algorithm=hashes.SHA256(),
+			label=None
+        )
+    )
+
+	encrypted_file = file+"_encrypted"
+	with open(encrypted_file, "wb") as f:
+		f.write(secret_key_encrypted+aes_data)
+
+	db.commit()
+	c.close()
+	db.close()
+	unknown_user = 0
+	return unknown_user
+
+def hybrid_unciphering(user,file):
+	private_key = "private_key_"+user+".pem"
+	with open(private_key, "rb") as private_key_file:
+		private_key_bytes = private_key_file.read()
+		private_key = serialization.load_pem_private_key(
+            private_key_bytes,
+            password=None,
+            backend=default_backend()
+        )
+	
+	with open(file, "rb") as f:
+		secret_key_encrypted = f.read(256)
+		aes_data = f.read()
+
+	secret_key = private_key.decrypt(
+		secret_key_encrypted,
+		padding.OAEP(
+			mgf=padding.MGF1(algorithm=hashes.SHA256()),
+			algorithm=hashes.SHA256(),
+			label=None
+        )
+    )
+
+	clear_data = aes_uncipher(secret_key,aes_data)
+
+	clear_file = file+"_unencrypted"
+	with open(clear_file, "wb") as f:
+		f.write(clear_data)
+
 def invite(user,target):
 	# Vérifier le niveau de permission de l'utilisateur
 	db = sql_conn()
