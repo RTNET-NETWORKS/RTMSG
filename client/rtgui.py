@@ -293,6 +293,31 @@ def aes_uncipher_gui():
         message.pack()
         return_button.pack()
 
+def rsa_gen_gui():
+    clear_gui()
+    username = assign_username()
+    name_label = tk.Label(window, text="Name of the key")
+    name_entry = tk.Entry(window, text="Name")
+
+    def rsa_gen_button():
+        name = name_entry.get()
+        send = 2
+        error = gs.generate_rsa_key_pair(name,username,send)
+        clear_gui()
+        message = tk.Label(window, text="")
+        return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
+        if error == 0:
+            message.config(text="The keys have been generated")
+        elif error == 1:
+            message.config(text="An error occurred")
+        message.pack()
+        return_button.pack()
+
+    send_button = tk.Button(window, text="Generate the keys", command=rsa_gen_button)
+    name_label.pack()
+    name_entry.pack()
+    send_button.pack()
+
 def exit_rtmsg():
     exit(0)
 
@@ -304,6 +329,7 @@ def user_gui():
     grant_button = tk.Button(window, text="Grant user", command=grant_user_gui)
     drop_button = tk.Button(window, text="Drop user", command=drop_user_gui)
     rtkey_button = tk.Button(window, text="RTKEY (WIP)", command=rtkey_gui)
+    rsa_button = tk.Button(window, text="Generate RSA keys", command=rsa_gen_gui)
     file_button = tk.Button(window, text="Ciphering files (full RSA, up to 241 bytes)", command=file_cipher_gui)
     unfile_button = tk.Button(window, text="Unciphering files (full RSA, up to 241 bytes)", command=file_uncipher_gui)
     aes_cipher_button = tk.Button(window, text="Ciphering files (AES in RSA, unlimited size)", command=aes_cipher_gui)
@@ -316,6 +342,7 @@ def user_gui():
     grant_button.pack()
     drop_button.pack()
     rtkey_button.pack()
+    rsa_button.pack()
     file_button.pack()
     unfile_button.pack()
     aes_cipher_button.pack()

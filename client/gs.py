@@ -105,6 +105,11 @@ def generate_rsa_key_pair(user_t,user,send):
 		print("")
 		print("Clef publique :")
 		print(public_key_pem.decode())
+	elif send == 2:
+		with open("public_key_"+user_t+".pem", "wb") as f:
+			f.write(public_key_pem)
+		error = 0
+		return error
 	else:
 		save_public_key_to_database(user, encoded_public_key, user_t)
 
