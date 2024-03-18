@@ -287,7 +287,7 @@ def aes_uncipher_gui():
         message = tk.Label(window, text="")
         return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
         if error == 0:
-            message.config(text="Your encrypted file has been saved in "+file+"_encrypted !")
+            message.config(text="Your clear file has been saved in "+file+"_uncrypted !")
         elif error == 1:
             message.config(text="An error occured")
         message.pack()
