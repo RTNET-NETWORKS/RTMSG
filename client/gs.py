@@ -442,9 +442,11 @@ def file_cipher(user,file):
 		decoded_public_key = base64.b64decode(public_key_encoded)
 		public_key = serialization.load_pem_public_key(decoded_public_key, backend=default_backend())
 
+	bloc_size = 256
+	encrypted_data = b""
 	with open(file, "rb") as f:
-		clear_data = f.read()
-	encrypted_data = public_key.encrypt(
+		clear_data = f.read(bloc_size)
+	encrypted_data += public_key.encrypt(
         clear_data,
         padding.OAEP(
             mgf=padding.MGF1(algorithm=hashes.SHA256()),
@@ -471,17 +473,21 @@ def file_uncipher(user,file):
             backend=default_backend()
         )
 
+	bloc_size = 256
+	clear_data = b""
 	with open(file, "rb") as f:
-		encrypted_data = f.read()
-
-	clear_data = private_key.decrypt(
-        encrypted_data,
-        padding.OAEP(
-            mgf=padding.MGF1(algorithm=hashes.SHA256()),
-            algorithm=hashes.SHA256(),
-            label=None
-        )
-    )
+		while True:
+			encrypted_data = f.read(bloc_size)
+			if not encrypted_data:
+				break
+			clear_data += private_key.decrypt(
+                encrypted_data,
+                padding.OAEP(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    algorithm=hashes.SHA256(),
+                    label=None
+                )
+            )
 
 	clear_file = file+"_clear"
 	with open(clear_file, "wb") as f:
