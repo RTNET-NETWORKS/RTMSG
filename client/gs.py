@@ -461,6 +461,35 @@ def file_cipher(user,file):
 	unknown_user = 0
 	return unknown_user
 
+def file_uncipher(user,file):
+	private_key = "private_key_"+user+".pem"
+	with open(private_key, "rb") as private_key_file:
+		private_key_bytes = private_key_file.read()
+		private_key = serialization.load_pem_private_key(
+            private_key_bytes,
+            password=None,
+            backend=default_backend()
+        )
+
+	with open(file, "rb") as f:
+		encrypted_data = f.read()
+
+	clear_data = private_key.decrypt(
+        encrypted_data,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+
+	clear_file = file+"_clear"
+	with open(clear_file, "wb") as f:
+		f.write(clear_data)
+
+	error = 0
+	return error
+
 def rtkey(user,choice,name,passwd):
 	if choice == "s":
 		db = sql_conn()
