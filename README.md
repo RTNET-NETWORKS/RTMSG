@@ -3,7 +3,7 @@ All the tools to use RTMSG, the message and ciphering utility tool made by RTNET
 
 With RTMSG, you will be able to send messages to others users, while ciphering with their public keys. Every cipher operation is made by your client, on your computer.
 
-Public keys are send and stored to a database, where every user can access, so they can cipher messages with their peer's public key.
+Public keys are sent and stored to a database, where every user can access, so they can cipher messages with their peer's public key.
 
 Public keys are also used for authentication.
 
@@ -22,6 +22,7 @@ Ciphering and unciphering files
 Python3
 Python3-cryptography
 Python3-pymysql
+Python3-tkinter
 
 ##### Instructions #####
 Create a CSV file nammed "db.csv", in which you will enter four fields delimited by ";" : DB address, DB user, DB password, DB
