@@ -424,13 +424,45 @@ def real_time(user):
 				sys.stdout.write(message)
 				sys.stdout.flush()
 	server.close()
- 
-def rtkey(user):
-	reponse = str(input("Stocker, consulter, ou supprimer un mot de passe ? S/C/R : "))
-	print("")
-	if reponse == "S" or reponse == "s":
-		name = str(input("Nom associé : "))
-		passwd = getpass.getpass("Mot de passe : ")
+
+def file_cipher(user,file):
+	db = sql_conn()
+	c = db.cursor()
+	c.execute("select clef from users where user = '"+user+"';")
+	result = c.fetchone()
+	if result is None:
+		c.execute("insert into operation values (DEFAULT, '"+user+"','bad_target','"+user+"',DEFAULT);")
+		db.commit()
+		c.close()
+		db.close()
+		unknown_user = 1
+		return unknown_user
+	else:
+		public_key_encoded = result[0]
+		decoded_public_key = base64.b64decode(public_key_encoded)
+		public_key = serialization.load_pem_public_key(decoded_public_key, backend=default_backend())
+
+	with open(file, "rb") as f:
+		clear_data = f.read()
+	encrypted_data = public_key.encrypt(
+        clear_data,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+	encrypted_file = file+"_encrypted"
+	with open(encrypted_file, "wb") as f:
+		f.write(encrypted_data)
+	db.commit()
+	c.close()
+	db.close()
+	unknown_user = 0
+	return unknown_user
+
+def rtkey(user,choice,name,passwd):
+	if choice == "s":
 		db = sql_conn()
 		c = db.cursor()
 		c.execute("select clef from users where user = '"+user+"';")
@@ -447,7 +479,7 @@ def rtkey(user):
 			db.commit()
 			c.close()
 			db.close()
-	elif reponse == "C" or reponse == "c":
+	elif choice == "C" or choice == "c":
 		print("Liste des mots de passes :")
 		print("")
 		db = sql_conn()
@@ -478,7 +510,7 @@ def rtkey(user):
 		db.commit()
 		c.close()
 		db.close()
-	elif reponse == "R" or reponse == "r":
+	elif choice == "R" or choice == "r":
 		print("Liste des mots de passes :")
 		print("")
 		db = sql_conn()

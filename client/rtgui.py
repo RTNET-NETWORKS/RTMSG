@@ -5,6 +5,7 @@
 import tkinter as tk
 from tkinter import *
 from tkinter import ttk
+from tkinter import filedialog
 import gs
 import time
 import threading
@@ -202,23 +203,52 @@ def rtkey_gui():
 
     def rtkey_button():
         clear_gui()
-        error = gs.rtkey(username,choice)
+        error = gs.rtkey(username,choice,name_password,password)
         message = tk.Label(window, text="")
         if error == 0:
             message.config(text="Password has been stored")
     
-    if choice == "Store new password":
+    def choice_function():
+        choice = choice_entry.get()
+        if choice == "Store new password":
+            clear_gui()
+            name_entry = tk.Entry(window, text="Name associated")
+            name_label = tk.Label(window, text="Name associated")
+            password_entry = tk.Entry(window, text="Password")
+            password_label = tk.Label(window, text="Password")
+            global password
+            global name_password
+            name_password = name_entry.get()
+            password = password_entry.get()
+            send_button = tk.Button(window, text="Send password", command=rtkey_button())
+            name_label.pack()
+            name_entry.pack()
+            password_label.pack()
+            password_entry.pack()
+            send_button.pack()
+        if choice == "Check password":
+            choice = "s"
+            error = gs.rtkey(username,choice,name_password,password)
+
+    choice_button = tk.Button(window, text="Make a choice", command=choice_function)
+    label.pack()
+    choice_entry.pack()
+    choice_button.pack()
+
+def file_cipher_gui():
+    username = assign_username()
+    file = filedialog.askopenfilename(initialdir="/", title="Select a file")
+    if file:
         clear_gui()
-        name_entry = tk.Entry(window, text="Name associated")
-        name_label = tk.Label(window, text="Name associated")
-        password_entry = tk.Entry(window, text="Password")
-        password_label = tk.Entry(window, text="Password")
-        send_button = tk.Button(window, text="Send password", command=rtkey_button)
-        name_entry.pack()
-        name_label.pack()
-        password_entry.pack()
-        password_label()
-        send_button.pack()
+        error = gs.file_cipher(username,file)
+        message = tk.Label(window, text="")
+        return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
+        if error == 0:
+            message.config(text="Your encrypted file has been saved in "+file+"_encrypted !")
+        elif error == 1:
+            message.config(text="An error occured")
+        message.pack()
+        return_button.pack()
 
 
 def exit_rtmsg():
@@ -231,7 +261,8 @@ def user_gui():
     invite_button = tk.Button(window, text="Invite a user", command=invite_gui)
     grant_button = tk.Button(window, text="Grant user", command=grant_user_gui)
     drop_button = tk.Button(window, text="Drop user", command=drop_user_gui)
-    rtkey_button = tk.Button(window, text="RTKEY", command=rtkey_gui)
+    rtkey_button = tk.Button(window, text="RTKEY (WIP)", command=rtkey_gui)
+    file_button = tk.Button(window, text="Ciphering files", command=file_cipher_gui)
     logout_button = tk.Button(window, text="Logout", command=login)
     exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
     send_button.pack()
@@ -240,6 +271,7 @@ def user_gui():
     grant_button.pack()
     drop_button.pack()
     rtkey_button.pack()
+    file_button.pack()
     logout_button.pack()
     exit_button.pack()
 
