@@ -680,6 +680,9 @@ def hybrid_unciphering(user,file):
 	with open(clear_file, "wb") as f:
 		f.write(clear_data)
 
+	error = 0
+	return error
+
 def invite(user,target):
 	# Vérifier le niveau de permission de l'utilisateur
 	db = sql_conn()
