@@ -123,6 +123,7 @@ def login():
                     label=None
                 )
             )
+            print(cipher_text)
             return jsonify({'challenge': cipher_text.decode('latin-1'), 'user_name': user_name})
         else:
             print("User pas trouvé")

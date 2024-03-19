@@ -376,6 +376,8 @@ def login_api():
         response = requests.post(api_url+"/login", json={'user_name': user_name}, verify=False)
 
         def decrypt_challenge(challenge_cipher_text):
+            challenge_cipher_text = challenge_cipher_text.encode('utf-8')
+            print(challenge_cipher_text)
             private_key_path = "private_key_"+username+".pem"
             with open(private_key_path, "rb") as key_file:
                 private_key = serialization.load_pem_private_key(
