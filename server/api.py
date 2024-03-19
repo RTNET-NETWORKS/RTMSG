@@ -160,17 +160,8 @@ def verify():
         # Récupérer la clé publique de l'utilisateur à partir de son nom dans la base de données
         user_public_key = load_public_key_from_database(user_name)
         if user_public_key is not None:
-            # Déchiffrer la réponse avec la clé publique de l'utilisateur
-            decrypted_challenge = user_public_key.encrypt(
-                user_response,
-                padding.OAEP(
-                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                    algorithm=hashes.SHA256(),
-                    label=None
-                )
-            )
             # Vérifier si la réponse correspond au challenge original
-            if decrypted_challenge == find_challenge_by_username(user_name):
+            if user_response == find_challenge_by_username(user_name):
                 print("User authentifié !")
                 remove_challenge(user_name)
                 return jsonify({'message': 'Authentication successful'})
