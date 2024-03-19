@@ -154,4 +154,10 @@ def verify():
         return jsonify({'message': 'Response or user name is missing'}), 400
 
 if __name__ == '__main__':
-    app.run(ssl_context='adhoc')
+    parser = argparse.ArgumentParser(description='Run Flask API with custom IP address')
+    parser.add_argument('ip_address', type=str, help='IP address to listen on')
+    args = parser.parse_args()
+
+    ip_address = args.ip_address
+
+    app.run(host=ip_address, ssl_context='adhoc')

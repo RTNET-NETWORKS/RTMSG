@@ -368,7 +368,8 @@ def login_api():
     url_entry = tk.Entry(window, text="IP")
 
     def login_api_button():
-        api_url = url_entry.get()
+        user_name = assign_username()
+        api_url = "https://"+url_entry.get()+":5000"
         response = requests.post(api_url, json={'user_name': user_name})
 
         def decrypt_challenge(challenge_cipher_text,private_key):
@@ -408,6 +409,13 @@ def login_api():
                 print("Échec de l'authentification.")
         else:
             print("Échec de la requête d'authentification.")
+
+    send_button = tk.Button(window, text="Authenticate", command=login_api_button)
+    return_button = tk.Button(window, text="Return to authentication menu", command=user_gui)
+    url_label.pack()
+    url_entry.pack()
+    send_button.pack()
+    return_button.pack()
 
 window = tk.Tk()
 window.title("RTGUI for RTMSG")
