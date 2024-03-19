@@ -184,7 +184,8 @@ def verify():
                 print("User authentifié !")
                 remove_challenge(user_name)
                 remove_token(user_name)
-                return jsonify({'message': 'Authentication successful', 'token': generate_token(user_name)})
+                token = generate_token(user_name).decode('latin-1')
+                return jsonify({'message': 'Authentication successful', 'token': token})
             else:
                 return jsonify({'message': 'Authentication failed'}), 401
         else:
