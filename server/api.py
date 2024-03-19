@@ -247,6 +247,7 @@ def command():
 			else:
 				return jsonify({'message': 'Successful'})
 		elif command == "testRTMSG":
+			print("Test Ok")
 			return jsonify({'message': 'Successful'})
 	else:
 		return jsonify({'message': 'Error'}), 401
