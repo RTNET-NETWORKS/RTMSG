@@ -99,7 +99,8 @@ def generate_token(username):
      return token
 
 def get_token(username):
-     return tokens.get(username)
+     if username in tokens:
+     	return tokens.get(username)
 
 def remove_token(username):
      if username in tokens:
@@ -192,6 +193,17 @@ def verify():
             return jsonify({'message': 'User not found'}), 404
     else:
         return jsonify({'message': 'Response or user name is missing'}), 400
+
+@app.route('/command', methods=['POST'])
+def command():
+	user = request.json.get('user_name')
+	token = request.json.get('token')
+	command = request.json.get('command')
+	token_t = get_token(user)
+	if token_t == token:
+		return jsonify({'message': 'Successful'})
+	else:
+		return jsonify({'message': 'Error'})
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run Flask API with custom IP address')

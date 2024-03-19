@@ -17,6 +17,11 @@ import requests
 import time
 import threading
 
+global token
+token = ""
+
+def store_token(token_r):
+    token = token_r
 
 def assign_username():
     username = entry.get()
@@ -325,6 +330,29 @@ def rsa_gen_gui():
     name_entry.pack()
     send_button.pack()
 
+def send_command(command):
+    clear_gui()
+    username = assign_username()
+    response = requests.post(api_url+"/command", json={'user_name': username, 'token': token, 'command': command}, verify=False)
+    if response.status_code == 200:
+        success = True
+    else:
+        success = False
+    return success
+
+def test_command():
+    clear_gui()
+    message = tk.Label(window, text="")
+    return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
+    command = 'testRTMSG'
+    send_command(command)
+    if send_command:
+        message.config(text="Successful")
+    else:
+        message.config(text="Error")
+    message.pack()
+    return_button.pack()
+
 def exit_rtmsg():
     exit(0)
 
@@ -341,6 +369,7 @@ def user_gui():
     unfile_button = tk.Button(window, text="Unciphering files (full RSA, up to 241 bytes)", command=file_uncipher_gui)
     aes_cipher_button = tk.Button(window, text="Ciphering files (AES in RSA, unlimited size)", command=aes_cipher_gui)
     aes_uncipher_button = tk.Button(window, text="Unciphering files (AES in RSA, unlimited size)", command=aes_uncipher_gui)
+    test_button = tk.Button(window, text="Test command API", command=test_command)
     logout_button = tk.Button(window, text="Logout", command=login)
     exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
     send_button.pack()
@@ -354,6 +383,7 @@ def user_gui():
     unfile_button.pack()
     aes_cipher_button.pack()
     aes_uncipher_button.pack()
+    test_button.pack()
     logout_button.pack()
     exit_button.pack()
 
@@ -371,9 +401,13 @@ def login_api():
     url_entry = tk.Entry(window, text="IP")
 
     def login_api_button():
+        clear_gui()
         user_name = assign_username()
+        global api_url
         api_url = "https://"+url_entry.get()+":5000"
         response = requests.post(api_url+"/login", json={'user_name': user_name}, verify=False)
+        message = tk.Label(window, text="")
+        return_button = tk.Button(window, text="Return to authentication menu", command=login)
 
         def decrypt_challenge(challenge_cipher_text):
             challenge_cipher_text = challenge_cipher_text.encode('latin-1')
@@ -411,11 +445,16 @@ def login_api():
 
             if response.status_code == 200:
                 print("Authentification réussie !")
-                print(response.json()['token'])
+                store_token(response.json()['token'].encode('latin-1'))
+                user_gui()
             else:
-                print("Échec de l'authentification.")
+                message.config(text="Server refused your authentication.")
+                message.pack()
+                return_button.pack()
         else:
-            print("Échec de la requête d'authentification.")
+            message.config(text="Try to authenticate failed.")
+            message.pack()
+            return_button.pack()
 
     send_button = tk.Button(window, text="Authenticate", command=login_api_button)
     return_button = tk.Button(window, text="Return to authentication menu", command=login)
