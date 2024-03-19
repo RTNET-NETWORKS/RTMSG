@@ -107,6 +107,7 @@ def generate_challenge_and_encrypt(user_public_key):
 def login():
     user_name = request.json.get('user_name')
     if user_name is not None:
+        print("User trouvé !")
         # Récupérer la clé publique de l'utilisateur à partir de son nom dans la base de données
         user_public_key = load_public_key_from_database(user_name)
         if user_public_key is not None:
@@ -122,8 +123,10 @@ def login():
             )
             return jsonify({'challenge': cipher_text.decode('latin1'), 'user_name': user_name})
         else:
+            print("User pas trouvé")
             return jsonify({'message': 'User not found'}), 404
     else:
+        print("y'a pas de user")
         return jsonify({'message': 'User name is missing'}), 400
 
 # Route pour vérifier la réponse au challenge
@@ -146,6 +149,7 @@ def verify():
             )
             # Vérifier si la réponse correspond au challenge original
             if decrypted_challenge == b'Random challenge':
+                print("User authentifié !")
                 return jsonify({'message': 'Authentication successful'})
             else:
                 return jsonify({'message': 'Authentication failed'}), 401

@@ -370,7 +370,7 @@ def login_api():
     def login_api_button():
         user_name = assign_username()
         api_url = "https://"+url_entry.get()+":5000"
-        response = requests.post(api_url, json={'user_name': user_name})
+        response = requests.post(api_url+"/login", json={'user_name': user_name})
 
         def decrypt_challenge(challenge_cipher_text,private_key):
             decrypted_challenge = private_key.decrypt(
@@ -400,7 +400,7 @@ def login_api():
             decrypted_challenge = decrypt_challenge(challenge_cipher_text, private_key)
 
             # Envoyer la réponse au challenge à l'API
-            verify_url = 'https://api.example.com/verify'
+            verify_url = api_url+'/verify'
             response = requests.post(verify_url, json={'response': decrypted_challenge, 'user_name': user_name})
 
             if response.status_code == 200:
