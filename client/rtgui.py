@@ -9,8 +9,10 @@ from tkinter import filedialog
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import hashes
 import gs
+import base64
 import requests
 import time
 import threading
@@ -359,6 +361,7 @@ def login():
     clear_gui()
     entry.pack()
     launch.pack()
+    launch_api.pack()
     exit_button.pack()
 
 def login_api():
@@ -370,24 +373,9 @@ def login_api():
     def login_api_button():
         user_name = assign_username()
         api_url = "https://"+url_entry.get()+":5000"
-        response = requests.post(api_url+"/login", json={'user_name': user_name})
+        response = requests.post(api_url+"/login", json={'user_name': user_name}, verify=False)
 
-        def decrypt_challenge(challenge_cipher_text,private_key):
-            decrypted_challenge = private_key.decrypt(
-            challenge_cipher_text,
-            padding.OAEP(
-                mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                algorithm=hashes.SHA256(),
-                label=None
-            )
-        )
-            return decrypted_challenge
-
-        if response.status_code == 200:
-            # Récupérer le challenge chiffré et le nom de l'utilisateur
-            challenge_cipher_text = response.json()['challenge']
-            user_name = response.json()['user_name']
-            
+        def decrypt_challenge(challenge_cipher_text):
             private_key_path = "private_key_"+username+".pem"
             with open(private_key_path, "rb") as key_file:
                 private_key = serialization.load_pem_private_key(
@@ -395,13 +383,27 @@ def login_api():
                 password=None,
                 backend=default_backend()
             )
+            decrypted_challenge = private_key.decrypt(
+                challenge_cipher_text,
+                padding.OAEP(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    algorithm=hashes.SHA256(),
+                    label=None
+                )
+            )
+            return decrypted_challenge
+
+        if response.status_code == 200:
+            # Récupérer le challenge chiffré et le nom de l'utilisateur
+            challenge_cipher_text = response.json()['challenge']
+            print(challenge_cipher_text)
 
             # Déchiffrer le challenge avec la clé privée du client (à implémenter)
-            decrypted_challenge = decrypt_challenge(challenge_cipher_text, private_key)
+            decrypted_challenge = decrypt_challenge(challenge_cipher_text)
 
             # Envoyer la réponse au challenge à l'API
             verify_url = api_url+'/verify'
-            response = requests.post(verify_url, json={'response': decrypted_challenge, 'user_name': user_name})
+            response = requests.post(verify_url, json={'response': decrypted_challenge, 'user_name': user_name}, verify=False)
 
             if response.status_code == 200:
                 print("Authentification réussie !")
@@ -411,7 +413,7 @@ def login_api():
             print("Échec de la requête d'authentification.")
 
     send_button = tk.Button(window, text="Authenticate", command=login_api_button)
-    return_button = tk.Button(window, text="Return to authentication menu", command=user_gui)
+    return_button = tk.Button(window, text="Return to authentication menu", command=login)
     url_label.pack()
     url_entry.pack()
     send_button.pack()

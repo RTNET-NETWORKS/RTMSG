@@ -111,6 +111,7 @@ def login():
         # Récupérer la clé publique de l'utilisateur à partir de son nom dans la base de données
         user_public_key = load_public_key_from_database(user_name)
         if user_public_key is not None:
+            print("Clef trouvée")
             # Générer un challenge aléatoire et le chiffrer avec la clé publique de l'utilisateur
             challenge = b'Random challenge'
             cipher_text = user_public_key.encrypt(
