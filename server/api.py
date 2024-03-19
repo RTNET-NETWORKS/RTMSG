@@ -74,6 +74,8 @@ def load_public_key_from_database(username):
 
 app = Flask(__name__)
 
+challenges = []
+
 with open("public_key_api.pem", "rb") as key_file:
     api_public_key = serialization.load_pem_public_key(
         key_file.read(),
@@ -103,6 +105,20 @@ def generate_challenge_and_encrypt(user_public_key):
     )
     return challenge, cipher_text
 
+def store_challenge(user_id,challenge):
+    challenges[user_id] = challenge
+    return challenge
+
+def remove_challenge(user_id):
+    if user_id in challenges:
+        del challenges[user_id]
+
+def find_challenge_by_username(username):
+    for user_id, challenge in challenges.items():
+        if username == user_id:
+            return challenge
+    return None
+
 @app.route('/login', methods=['POST'])
 def login():
     user_name = request.json.get('user_name')
@@ -114,6 +130,7 @@ def login():
             print("Clef trouvée")
             # Générer un challenge aléatoire et le chiffrer avec la clé publique de l'utilisateur
             challenge = os.urandom(32)
+            store_challenge(user_name,challenge)
             print(challenge)
             cipher_text = user_public_key.encrypt(
                 challenge,
@@ -142,7 +159,7 @@ def verify():
         user_public_key = load_public_key_from_database(user_name)
         if user_public_key is not None:
             # Déchiffrer la réponse avec la clé publique de l'utilisateur
-            decrypted_challenge = user_public_key.decrypt(
+            decrypted_challenge = user_public_key.encrypt(
                 user_response,
                 padding.OAEP(
                     mgf=padding.MGF1(algorithm=hashes.SHA256()),
@@ -151,8 +168,9 @@ def verify():
                 )
             )
             # Vérifier si la réponse correspond au challenge original
-            if decrypted_challenge == b'Random challenge':
+            if decrypted_challenge == find_challenge_by_username(user_name):
                 print("User authentifié !")
+                remove_challenge(user_name)
                 return jsonify({'message': 'Authentication successful'})
             else:
                 return jsonify({'message': 'Authentication failed'}), 401

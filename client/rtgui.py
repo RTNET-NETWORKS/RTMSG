@@ -376,7 +376,7 @@ def login_api():
         response = requests.post(api_url+"/login", json={'user_name': user_name}, verify=False)
 
         def decrypt_challenge(challenge_cipher_text):
-            challenge_cipher_text = challenge_cipher_text.encode('utf-8')
+            challenge_cipher_text = challenge_cipher_text.encode('latin-1')
             print(challenge_cipher_text)
             private_key_path = "private_key_"+username+".pem"
             with open(private_key_path, "rb") as key_file:
@@ -393,6 +393,7 @@ def login_api():
                     label=None
                 )
             )
+            print(decrypted_challenge)
             return decrypted_challenge
 
         if response.status_code == 200:
@@ -404,6 +405,7 @@ def login_api():
             decrypted_challenge = decrypt_challenge(challenge_cipher_text)
 
             # Envoyer la réponse au challenge à l'API
+            decrypted_challenge = decrypted_challenge.decode('latin-1')
             verify_url = api_url+'/verify'
             response = requests.post(verify_url, json={'response': decrypted_challenge, 'user_name': user_name}, verify=False)
 
