@@ -162,6 +162,8 @@ def verify():
         if user_public_key is not None:
             # Vérifier si la réponse correspond au challenge original
             print(find_challenge_by_username(user_name))
+            print("response")
+            print(user_response)
             if user_response == find_challenge_by_username(user_name):
                 print("User authentifié !")
                 remove_challenge(user_name)
