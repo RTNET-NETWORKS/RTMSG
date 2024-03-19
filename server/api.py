@@ -75,6 +75,7 @@ def load_public_key_from_database(username):
 app = Flask(__name__)
 
 challenges = {}
+tokens = {}
 
 with open("public_key_api.pem", "rb") as key_file:
     api_public_key = serialization.load_pem_public_key(
@@ -89,12 +90,26 @@ with open("private_key_api.pem", "rb") as key_file:
         backend=None
     )
 
-def generate_challenge():
+def generate_random():
 	return os.urandom(32)
 
+def generate_token(username):
+     token = generate_random()
+     tokens[username] = token
+     return token
+
+def get_token(username):
+     return tokens.get(username)
+
+def remove_token(username):
+     if username in tokens:
+          del tokens[username]
+          return True
+     return False
+
 # Fonction pour générer un challenge aléatoire et le chiffrer avec la clé publique de l'utilisateur
-def generate_challenge_and_encrypt(user_public_key):
-    challenge = generate_challenge()
+def generate_random_and_encrypt(user_public_key):
+    challenge = generate_random()
     cipher_text = user_public_key.encrypt(
         challenge,
         padding.OAEP(
@@ -168,7 +183,8 @@ def verify():
             if user_response == find_challenge_by_username(user_name):
                 print("User authentifié !")
                 remove_challenge(user_name)
-                return jsonify({'message': 'Authentication successful'})
+                remove_token(user_name)
+                return jsonify({'message': 'Authentication successful', 'token': generate_token(user_name)})
             else:
                 return jsonify({'message': 'Authentication failed'}), 401
         else:

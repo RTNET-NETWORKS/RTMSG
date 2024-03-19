@@ -411,6 +411,7 @@ def login_api():
 
             if response.status_code == 200:
                 print("Authentification réussie !")
+                print(response.json()['token'])
             else:
                 print("Échec de l'authentification.")
         else:
