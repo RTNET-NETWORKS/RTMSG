@@ -243,13 +243,13 @@ def command():
 		if command == "send_message":
 			result = send_message(content)
 			if result:
-				return jsonify({'message': 'Error'})
+				return jsonify({'message': 'Error'}), 401
 			else:
 				return jsonify({'message': 'Successful'})
 		elif command == "testRTMSG":
 			return jsonify({'message': 'Successful'})
 	else:
-		return jsonify({'message': 'Error'})
+		return jsonify({'message': 'Error'}), 401
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run Flask API with custom IP address')

@@ -373,7 +373,13 @@ def send_message_api_gui():
         message = message_entry.get()
         command = 'send_message'
         content = [username,target,message]
-        send_command(command,content)
+        success = send_command(command,content)
+        if success:
+            result.config(text="Message sent !")
+        else:
+            result.config(text="Failed !")
+        result.pack()
+        return_button.pack()
 
     user_label.pack()
     user_entry.pack()
@@ -403,6 +409,7 @@ def user_gui():
     logout_button = tk.Button(window, text="Logout", command=login)
     exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
     send_button.pack()
+    send_api_button.pack()
     read_button.pack()
     invite_button.pack()
     grant_button.pack()
