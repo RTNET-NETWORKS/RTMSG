@@ -105,19 +105,21 @@ def generate_challenge_and_encrypt(user_public_key):
     )
     return challenge, cipher_text
 
-def store_challenge(user_id,challenge):
-    challenges[user_id] = challenge
+def store_challenge(username,challenge):
+    challenges[username] = challenge
     return challenge
 
-def remove_challenge(user_id):
-    if user_id in challenges:
-        del challenges[user_id]
+def remove_challenge(username):
+    if username in challenges:
+        del challenges[username]
+        return True
+    return False
 
 def find_challenge_by_username(username):
-    for user_id, challenge in challenges.items():
-        if username == user_id:
-            return challenge
-    return None
+    return challenges.get(username)
+
+def get_challenge(username):
+    return challenges.get(username)
 
 @app.route('/login', methods=['POST'])
 def login():
