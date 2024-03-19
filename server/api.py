@@ -124,6 +124,7 @@ def login():
                 )
             )
             print(cipher_text)
+            print(jsonify({'challenge': cipher_text.decode('latin1'), 'user_name': user_name}))
             return jsonify({'challenge': cipher_text.decode('latin1'), 'user_name': user_name})
         else:
             print("User pas trouvé")
