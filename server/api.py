@@ -123,7 +123,7 @@ def login():
                     label=None
                 )
             )
-            return jsonify({'challenge': cipher_text.encode('utf-8'), 'user_name': user_name})
+            return jsonify({'challenge': cipher_text.decode('latin-1'), 'user_name': user_name})
         else:
             print("User pas trouvé")
             return jsonify({'message': 'User not found'}), 404
