@@ -74,7 +74,7 @@ def load_public_key_from_database(username):
 
 app = Flask(__name__)
 
-challenges = []
+challenges = {}
 
 with open("public_key_api.pem", "rb") as key_file:
     api_public_key = serialization.load_pem_public_key(
