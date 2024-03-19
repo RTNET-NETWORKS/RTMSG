@@ -114,6 +114,7 @@ def login():
             print("Clef trouvée")
             # Générer un challenge aléatoire et le chiffrer avec la clé publique de l'utilisateur
             challenge = b'Random challenge'
+            print(challenge)
             cipher_text = user_public_key.encrypt(
                 challenge,
                 padding.OAEP(
@@ -122,6 +123,7 @@ def login():
                     label=None
                 )
             )
+            print(cipher_text)
             return jsonify({'challenge': cipher_text.decode('latin1'), 'user_name': user_name})
         else:
             print("User pas trouvé")
