@@ -6,7 +6,12 @@ import tkinter as tk
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives import hashes
 import gs
+import requests
 import time
 import threading
 
@@ -356,6 +361,54 @@ def login():
     launch.pack()
     exit_button.pack()
 
+def login_api():
+    clear_gui()
+    username = assign_username()
+    url_label = tk.Label(window, text="IP")
+    url_entry = tk.Entry(window, text="IP")
+
+    def login_api_button():
+        api_url = url_entry.get()
+        response = requests.post(api_url, json={'user_name': user_name})
+
+        def decrypt_challenge(challenge_cipher_text,private_key):
+            decrypted_challenge = private_key.decrypt(
+            challenge_cipher_text,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None
+            )
+        )
+            return decrypted_challenge
+
+        if response.status_code == 200:
+            # Récupérer le challenge chiffré et le nom de l'utilisateur
+            challenge_cipher_text = response.json()['challenge']
+            user_name = response.json()['user_name']
+            
+            private_key_path = "private_key_"+username+".pem"
+            with open(private_key_path, "rb") as key_file:
+                private_key = serialization.load_pem_private_key(
+                key_file.read(),
+                password=None,
+                backend=default_backend()
+            )
+
+            # Déchiffrer le challenge avec la clé privée du client (à implémenter)
+            decrypted_challenge = decrypt_challenge(challenge_cipher_text, private_key)
+
+            # Envoyer la réponse au challenge à l'API
+            verify_url = 'https://api.example.com/verify'
+            response = requests.post(verify_url, json={'response': decrypted_challenge, 'user_name': user_name})
+
+            if response.status_code == 200:
+                print("Authentification réussie !")
+            else:
+                print("Échec de l'authentification.")
+        else:
+            print("Échec de la requête d'authentification.")
+
 window = tk.Tk()
 window.title("RTGUI for RTMSG")
 window.geometry("600x600")
@@ -364,9 +417,11 @@ message = tk.Label(window, text="")
 
 entry = tk.Entry(window, text="Login")
 launch = tk.Button(window, text="Authenticate", command=call_gs)
+launch_api = tk.Button(window, text="Authenticate with API (WIP)", command=login_api)
 exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
 entry.pack()
 launch.pack()
+launch_api.pack()
 exit_button.pack()
 
 window.mainloop()

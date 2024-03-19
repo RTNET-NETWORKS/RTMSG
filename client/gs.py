@@ -258,9 +258,6 @@ def user_grant(user,user_g,level):
 def send_message(user,target,message):
 	db = sql_conn()
 	c = db.cursor()
-	print(user)
-	print(target)
-	print(message)
 	c.execute("select clef from users where user = '"+target+"';")
 	result = c.fetchone()
 	if result is None:
