@@ -17,10 +17,10 @@ import requests
 import time
 import threading
 
-global token
 token = ""
 
 def store_token(token_r):
+    global token
     token = token_r
 
 def assign_username():
@@ -333,6 +333,8 @@ def rsa_gen_gui():
 def send_command(command,content):
     clear_gui()
     username = assign_username()
+    global token
+    token = token.decode('latin-1')
     response = requests.post(api_url+"/command", json={'user_name': username, 'token': token, 'command': command, 'content': content}, verify=False)
     if response.status_code == 200:
         success = True

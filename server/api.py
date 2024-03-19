@@ -236,6 +236,7 @@ def verify():
 def command():
 	user = request.json.get('user_name')
 	token = request.json.get('token')
+	token = token.encode('latin-1')
 	command = request.json.get('command')
 	content = request.json.get('content')
 	token_t = get_token(user)
