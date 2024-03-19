@@ -242,7 +242,10 @@ def command():
 	print("User : "+user)
 	print("Token : "+token)
 	print("Command : "+command)
-	print("Content : "+content)
+	if content is not None:
+		print("Content : "+content)
+	else:
+		print("No content")
 	if token_t == token:
 		if command == "send_message":
 			result = send_message(content)

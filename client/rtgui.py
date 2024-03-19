@@ -408,6 +408,7 @@ def user_gui():
     test_button = tk.Button(window, text="Test command API", command=test_command)
     logout_button = tk.Button(window, text="Logout", command=login)
     exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
+    token_label = tk.Label(window,text=token)
     send_button.pack()
     send_api_button.pack()
     read_button.pack()
@@ -421,6 +422,7 @@ def user_gui():
     aes_cipher_button.pack()
     aes_uncipher_button.pack()
     test_button.pack()
+    token_label.pack()
     logout_button.pack()
     exit_button.pack()
 
