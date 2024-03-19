@@ -156,6 +156,7 @@ def login():
 def verify():
     user_response = request.json.get('response')
     user_name = request.json.get('user_name')
+    user_reponse = user_response.encode('latin-1')
     if user_response is not None and user_name is not None:
         # Récupérer la clé publique de l'utilisateur à partir de son nom dans la base de données
         user_public_key = load_public_key_from_database(user_name)
