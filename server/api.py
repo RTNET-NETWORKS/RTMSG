@@ -239,6 +239,10 @@ def command():
 	command = request.json.get('command')
 	content = request.json.get('content')
 	token_t = get_token(user)
+	print("User : "+user)
+	print("Token : "+token)
+	print("Command : "+command)
+	print("Content : "+content)
 	if token_t == token:
 		if command == "send_message":
 			result = send_message(content)
