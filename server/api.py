@@ -113,7 +113,7 @@ def login():
         if user_public_key is not None:
             print("Clef trouvée")
             # Générer un challenge aléatoire et le chiffrer avec la clé publique de l'utilisateur
-            challenge = b'Random challenge'
+            challenge = os.random(32)
             print(challenge)
             cipher_text = user_public_key.encrypt(
                 challenge,
@@ -123,8 +123,6 @@ def login():
                     label=None
                 )
             )
-            print(cipher_text)
-            print(jsonify({'challenge': cipher_text.decode('latin1'), 'user_name': user_name}))
             return jsonify({'challenge': cipher_text.decode('latin1'), 'user_name': user_name})
         else:
             print("User pas trouvé")
