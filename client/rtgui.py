@@ -346,8 +346,8 @@ def test_command():
     return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
     command = 'testRTMSG'
     content = None
-    send_command(command,content)
-    if send_command:
+    success = send_command(command,content)
+    if success:
         message.config(text="Successful")
     else:
         message.config(text="Error")

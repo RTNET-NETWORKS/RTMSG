@@ -243,6 +243,7 @@ def command():
 		if command == "send_message":
 			result = send_message(content)
 			if result:
+				print("Error sending message")
 				return jsonify({'message': 'Error'}), 401
 			else:
 				return jsonify({'message': 'Successful'})
