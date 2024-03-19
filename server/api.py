@@ -239,6 +239,7 @@ def command():
 	command = request.json.get('command')
 	content = request.json.get('content')
 	token_t = get_token(user)
+	print(token_t)
 	print("User : "+user)
 	print("Token : "+token)
 	print("Command : "+command)
