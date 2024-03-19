@@ -6,10 +6,22 @@ import tkinter as tk
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import hashes
 import gs
+import base64
+import requests
 import time
 import threading
 
+global token
+token = ""
+
+def store_token(token_r):
+    token = token_r
 
 def assign_username():
     username = entry.get()
@@ -287,11 +299,59 @@ def aes_uncipher_gui():
         message = tk.Label(window, text="")
         return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
         if error == 0:
-            message.config(text="Your encrypted file has been saved in "+file+"_encrypted !")
+            message.config(text="Your clear file has been saved in "+file+"_uncrypted !")
         elif error == 1:
             message.config(text="An error occured")
         message.pack()
         return_button.pack()
+
+def rsa_gen_gui():
+    clear_gui()
+    username = assign_username()
+    name_label = tk.Label(window, text="Name of the key")
+    name_entry = tk.Entry(window, text="Name")
+
+    def rsa_gen_button():
+        name = name_entry.get()
+        send = 2
+        error = gs.generate_rsa_key_pair(name,username,send)
+        clear_gui()
+        message = tk.Label(window, text="")
+        return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
+        if error == 0:
+            message.config(text="The keys have been generated")
+        elif error == 1:
+            message.config(text="An error occurred")
+        message.pack()
+        return_button.pack()
+
+    send_button = tk.Button(window, text="Generate the keys", command=rsa_gen_button)
+    name_label.pack()
+    name_entry.pack()
+    send_button.pack()
+
+def send_command(command):
+    clear_gui()
+    username = assign_username()
+    response = requests.post(api_url+"/command", json={'user_name': username, 'token': token, 'command': command}, verify=False)
+    if response.status_code == 200:
+        success = True
+    else:
+        success = False
+    return success
+
+def test_command():
+    clear_gui()
+    message = tk.Label(window, text="")
+    return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
+    command = 'testRTMSG'
+    send_command(command)
+    if send_command:
+        message.config(text="Successful")
+    else:
+        message.config(text="Error")
+    message.pack()
+    return_button.pack()
 
 def exit_rtmsg():
     exit(0)
@@ -304,10 +364,12 @@ def user_gui():
     grant_button = tk.Button(window, text="Grant user", command=grant_user_gui)
     drop_button = tk.Button(window, text="Drop user", command=drop_user_gui)
     rtkey_button = tk.Button(window, text="RTKEY (WIP)", command=rtkey_gui)
+    rsa_button = tk.Button(window, text="Generate RSA keys", command=rsa_gen_gui)
     file_button = tk.Button(window, text="Ciphering files (full RSA, up to 241 bytes)", command=file_cipher_gui)
     unfile_button = tk.Button(window, text="Unciphering files (full RSA, up to 241 bytes)", command=file_uncipher_gui)
     aes_cipher_button = tk.Button(window, text="Ciphering files (AES in RSA, unlimited size)", command=aes_cipher_gui)
     aes_uncipher_button = tk.Button(window, text="Unciphering files (AES in RSA, unlimited size)", command=aes_uncipher_gui)
+    test_button = tk.Button(window, text="Test command API", command=test_command)
     logout_button = tk.Button(window, text="Logout", command=login)
     exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
     send_button.pack()
@@ -316,10 +378,12 @@ def user_gui():
     grant_button.pack()
     drop_button.pack()
     rtkey_button.pack()
+    rsa_button.pack()
     file_button.pack()
     unfile_button.pack()
     aes_cipher_button.pack()
     aes_uncipher_button.pack()
+    test_button.pack()
     logout_button.pack()
     exit_button.pack()
 
@@ -327,7 +391,77 @@ def login():
     clear_gui()
     entry.pack()
     launch.pack()
+    launch_api.pack()
     exit_button.pack()
+
+def login_api():
+    clear_gui()
+    username = assign_username()
+    url_label = tk.Label(window, text="IP")
+    url_entry = tk.Entry(window, text="IP")
+
+    def login_api_button():
+        clear_gui()
+        user_name = assign_username()
+        global api_url
+        api_url = "https://"+url_entry.get()+":5000"
+        response = requests.post(api_url+"/login", json={'user_name': user_name}, verify=False)
+        message = tk.Label(window, text="")
+        return_button = tk.Button(window, text="Return to authentication menu", command=login)
+
+        def decrypt_challenge(challenge_cipher_text):
+            challenge_cipher_text = challenge_cipher_text.encode('latin-1')
+            print(challenge_cipher_text)
+            private_key_path = "private_key_"+username+".pem"
+            with open(private_key_path, "rb") as key_file:
+                private_key = serialization.load_pem_private_key(
+                key_file.read(),
+                password=None,
+                backend=default_backend()
+            )
+            decrypted_challenge = private_key.decrypt(
+                challenge_cipher_text,
+                padding.OAEP(
+                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                    algorithm=hashes.SHA256(),
+                    label=None
+                )
+            )
+            print(decrypted_challenge)
+            return decrypted_challenge
+
+        if response.status_code == 200:
+            # Récupérer le challenge chiffré et le nom de l'utilisateur
+            challenge_cipher_text = response.json()['challenge']
+            print(challenge_cipher_text)
+
+            # Déchiffrer le challenge avec la clé privée du client (à implémenter)
+            decrypted_challenge = decrypt_challenge(challenge_cipher_text)
+
+            # Envoyer la réponse au challenge à l'API
+            decrypted_challenge = decrypted_challenge.decode('latin-1')
+            verify_url = api_url+'/verify'
+            response = requests.post(verify_url, json={'response': decrypted_challenge, 'user_name': user_name}, verify=False)
+
+            if response.status_code == 200:
+                print("Authentification réussie !")
+                store_token(response.json()['token'].encode('latin-1'))
+                user_gui()
+            else:
+                message.config(text="Server refused your authentication.")
+                message.pack()
+                return_button.pack()
+        else:
+            message.config(text="Try to authenticate failed.")
+            message.pack()
+            return_button.pack()
+
+    send_button = tk.Button(window, text="Authenticate", command=login_api_button)
+    return_button = tk.Button(window, text="Return to authentication menu", command=login)
+    url_label.pack()
+    url_entry.pack()
+    send_button.pack()
+    return_button.pack()
 
 window = tk.Tk()
 window.title("RTGUI for RTMSG")
@@ -337,9 +471,11 @@ message = tk.Label(window, text="")
 
 entry = tk.Entry(window, text="Login")
 launch = tk.Button(window, text="Authenticate", command=call_gs)
+launch_api = tk.Button(window, text="Authenticate with API (WIP)", command=login_api)
 exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
 entry.pack()
 launch.pack()
+launch_api.pack()
 exit_button.pack()
 
 window.mainloop()

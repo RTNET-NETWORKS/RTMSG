@@ -105,6 +105,11 @@ def generate_rsa_key_pair(user_t,user,send):
 		print("")
 		print("Clef publique :")
 		print(public_key_pem.decode())
+	elif send == 2:
+		with open("public_key_"+user_t+".pem", "wb") as f:
+			f.write(public_key_pem)
+		error = 0
+		return error
 	else:
 		save_public_key_to_database(user, encoded_public_key, user_t)
 
@@ -253,9 +258,6 @@ def user_grant(user,user_g,level):
 def send_message(user,target,message):
 	db = sql_conn()
 	c = db.cursor()
-	print(user)
-	print(target)
-	print(message)
 	c.execute("select clef from users where user = '"+target+"';")
 	result = c.fetchone()
 	if result is None:
@@ -674,6 +676,9 @@ def hybrid_unciphering(user,file):
 	clear_file = file+"_unencrypted"
 	with open(clear_file, "wb") as f:
 		f.write(clear_data)
+
+	error = 0
+	return error
 
 def invite(user,target):
 	# Vérifier le niveau de permission de l'utilisateur
