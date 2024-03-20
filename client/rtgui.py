@@ -338,9 +338,12 @@ def send_command(command,content):
     response = requests.post(api_url+"/command", json={'user_name': username, 'token': token, 'command': command, 'content': content}, verify=False)
     if response.status_code == 200:
         success = True
-        if response.json()['command']:
+        print("Retour reçu")
+        if 'command' in response:
+            print(response.json()['command'])
             if response.json()['command']:
                 content = response.json()['command']
+                token = token.encode('latin-1')
                 return success, content
     else:
         success = False
@@ -399,15 +402,13 @@ def send_message_api_gui():
 def read_message_api_gui():
     clear_gui()
     label_array = tk.Label(window, text="")
-    username = assign_username()
     read_state = tk.BooleanVar()
     case = tk.Checkbutton(window, text="Red messages", variable=read_state)
     case.pack()
 
     def read_message_api_button():
-        read = read_state.get()
+        content = read_state.get()
         command = 'read_message'
-        content = case.get()
         success, content = send_command(command,content)
         return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
         if success:
@@ -433,7 +434,7 @@ def user_gui():
     send_button = tk.Button(window, text="Send message", command=send_message_gui)
     send_api_button = tk.Button(window, text="Send message (API)", command=send_message_api_gui)
     read_button = tk.Button(window, text="Read message", command=read_message_gui)
-    read_button = tk.Button(window, text="Read message (API)", command=read_message_api_gui)
+    read_api_button = tk.Button(window, text="Read message (API)", command=read_message_api_gui)
     invite_button = tk.Button(window, text="Invite a user", command=invite_gui)
     grant_button = tk.Button(window, text="Grant user", command=grant_user_gui)
     drop_button = tk.Button(window, text="Drop user", command=drop_user_gui)
@@ -450,6 +451,7 @@ def user_gui():
     send_button.pack()
     send_api_button.pack()
     read_button.pack()
+    read_api_button.pack()
     invite_button.pack()
     grant_button.pack()
     drop_button.pack()
