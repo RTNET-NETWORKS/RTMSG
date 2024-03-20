@@ -11,6 +11,8 @@ from cryptography.hazmat.backends import default_backend
 import argparse
 import os
 import csv
+import random
+import string
 import jwt
 import pymysql
 import base64
@@ -211,6 +213,134 @@ def read_message(user,content):
 	db.close()
 	return messages
 
+def grant_user(user,content):
+	db = sql_conn()
+	c = db.cursor()
+	user_g = content[0]
+	level = content[1]
+	c.execute("select user from users where user = '"+user_g+"';")
+	error = 0
+	if not c.fetchone():
+		print("Utilisateur inconnu")
+		c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_g+"',DEFAULT);")
+		db.commit()
+		c.close()
+		db.close()
+		error = 1
+		return error
+	c.execute("select user, level from admin where user = '"+user+"';")
+	result = c.fetchone()
+	if result:
+		levelint = int(level)
+		if levelint < 1 or levelint > 3:
+			print("Opération refusée : niveau d'accès invalide")
+			c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_g+"',DEFAULT);")
+			db.commit()
+			c.close()
+			db.close()
+			error = 2
+			return error
+		if int(result[1]) == 4:
+			c.execute("select user, level from admin where user = '"+user_g+"';")
+			result = c.fetchone()
+			if result:
+				if int(result[1]) == 4:
+					print("Opération refusée : l'utilisateur est déjà administrateur")
+					c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_g+"',DEFAULT);")
+					db.commit()
+					c.close()
+					db.close()
+					error = 2
+					return error
+				else:
+					c.execute("update admin set level = "+level+" where user = '"+user_g+"';")
+					c.execute("insert into operation values (DEFAULT, '"+user+"','grant','"+user_g+"',DEFAULT);")
+					db.commit()
+					c.close()
+					db.close()
+					error = 0
+					return error
+			else:
+				c.execute("insert into admin values (DEFAULT,'"+user_g+"',"+level+",DEFAULT,DEFAULT);")
+				c.execute("insert into operation values (DEFAULT, '"+user+"','grant','"+user_g+"',DEFAULT);")
+				db.commit()
+				c.close()
+				db.close()
+				error = 0
+				return error
+		else:
+			print("Opération refusée")
+			c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_g+"',DEFAULT);")
+			db.commit()
+			c.close()
+			db.close()
+			error = 2
+			return error
+	else:
+		print("Opération refusée")
+		c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+user_g+"',DEFAULT);")
+		db.commit()
+		c.close()
+		db.close()
+		error = 2
+		return error
+	db.commit()
+	c.close()
+	db.close()
+
+def random_invite(length):
+	caracteres = string.ascii_letters + string.digits
+	code = ''.join(random.choice(caracteres) for _ in range(length))
+	return code
+
+def invite_user(user,content):
+	# Vérifier le niveau de permission de l'utilisateur
+	db = sql_conn()
+	c = db.cursor()
+	c.execute("select level from admin where user = '"+user+"';")
+	result = c.fetchone()
+	target = content[1]
+	error = 0
+	if result:
+		if int(result[0]) >= 3:
+			# Vérifier si l'utilisateur existe déjà
+			c.execute("select user from users where user = '"+target+"';")
+			result = c.fetchone()
+			if result:
+				print("Utilisateur déjà existant")
+				c.execute("insert into operation values (DEFAULT, '"+user+"','bad_invitation','"+target+"',DEFAULT);")
+				error = "error"
+			else:
+				c.execute("select target from invitation where target = '"+target+"';")
+				result = c.fetchone()
+				if result:
+					print("Utilisateur déjà invité")
+					c.execute("insert into operation values (DEFAULT, '"+user+"','bad_invitation','"+target+"',DEFAULT);")
+					error = "error"
+				else:
+        			# Générer un code d'invitation aléatoire
+					code = random_invite(6)
+					c.execute("insert into invitation values (DEFAULT,'"+user+"','"+target+"','"+code+"')")
+					c.execute("insert into operation values (DEFAULT, '"+user+"','invitation','"+target+"',DEFAULT);")
+					print("Code d'invitation créé : "+code)
+					db.commit()
+					c.close()
+					db.close()
+					return code
+		else:
+			print("Opération refusée")
+			c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
+			error = "error"
+	else:
+		print("Opération refusée")
+		c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
+		error = "error"
+	print("")
+	db.commit()
+	c.close()
+	db.close()
+	return error
+
 @app.route('/login', methods=['POST'])
 def login():
     user_name = request.json.get('user_name')
@@ -306,6 +436,20 @@ def command():
 			else:
 				print("Error reading message")
 				return jsonify({'message': 'Error reading message'}),401
+		elif command == "grant_user":
+			result = grant_user(user,content)
+			if result == 0:
+				return jsonify({'message': 'Granted'}),200
+			elif result == 1:
+				return jsonify({'message': 'Unknown user'}),404
+			elif result == 2:
+				return jsonify({'message': 'Forbidden'}),403
+		elif command == "invite_user":
+			result = invite_user(user,content)
+			if result != "error":
+				return jsonify({'command': 'invite_user', 'message': result})
+			else:
+				return jsonify({'command': 'invite_user', 'message': 'error'}),401
 		else:
 			return jsonify({'message': 'Command unknown'}), 404
 	else:

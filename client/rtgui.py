@@ -366,9 +366,13 @@ def send_command(command,content):
         message = result.get('message')
         try:
             command = result.get('command')
+            if command:
+                token = token.encode('latin-1')
             if command == "read_message":
                 content = message
-                token = token.encode('latin-1')
+                return content
+            elif command == "invite_user":
+                content = message
                 return content
         except KeyError as e:    
             print("Pas de champ commande")
@@ -465,16 +469,74 @@ def read_message_api_gui():
     check_button.pack()
     gui_button.pack()
 
+def grant_api_gui():
+    clear_gui()
+    user_label = tk.Label(window, text="User to grant")
+    user_entry = tk.Entry(window, text="User to grant")
+    level_label = tk.Label(window, text="Level to grant")
+    user_level = tk.Entry(window, text="Level")
+
+    def grant_user_api_button():
+        user_target = user_entry.get()
+        level_target = user_level.get()
+        level_target = str(level_target)
+        command = "grant_user"
+        content = [user_target,level_target]
+        success = send_command(command,content)
+        return_button = tk.Button(window, text="Return to main menu", command=user_gui)
+        if success:
+            clear_gui()
+            message.config(text="User has been granted !")
+        else:
+            clear_gui()
+            message.config(text="Error")
+        message.pack()
+        return_button.pack()
+
+    user_button = tk.Button(window, text="Grant user", command=grant_user_api_button)
+    user_label.pack()
+    user_entry.pack()
+    level_label.pack()
+    user_level.pack()
+    user_button.pack()
+
+def invite_api_gui():
+    clear_gui()
+    username = assign_username()
+    target_entry = tk.Entry(window, text="User to invite")
+    target_entry.pack()
+    
+
+    def send_invite_api_button():
+        clear_gui()
+        target = target_entry.get()
+        command = "invite_user"
+        content = [username,target]
+        error = send_command(command,content)
+        message = tk.Label(window, text="")
+        return_button = tk.Button(window, text="Return to main menu", command=user_gui)
+        print(error)
+        if error == False:
+            message.config(text="Error creating invitation code")
+        else:
+            message.config(text="Code created for "+target+" : "+error)
+        message.pack()
+        return_button.pack()
+
+    send_button = tk.Button(window, text="Send invitation", command=send_invite_api_button)
+    send_button.pack()
 def exit_rtmsg():
     exit(0)
 
 def user_gui():
     clear_gui()
-    send_button = tk.Button(window, text="Send message", command=send_message_gui)
+#    send_button = tk.Button(window, text="Send message", command=send_message_gui)
     send_api_button = tk.Button(window, text="Send message (API)", command=send_message_api_gui)
-    read_button = tk.Button(window, text="Read message", command=read_message_gui)
+#    read_button = tk.Button(window, text="Read message", command=read_message_gui)
     read_api_button = tk.Button(window, text="Read message (API)", command=read_message_api_gui)
-    invite_button = tk.Button(window, text="Invite a user", command=invite_gui)
+#    invite_button = tk.Button(window, text="Invite a user", command=invite_gui)
+    invite_api_button = tk.Button(window, text="Invite a user (API)", command=invite_api_gui)
+    grant_api_button = tk.Button(window, text="Grant a user (API)", command=grant_api_gui)
     grant_button = tk.Button(window, text="Grant user", command=grant_user_gui)
     drop_button = tk.Button(window, text="Drop user", command=drop_user_gui)
     rtkey_button = tk.Button(window, text="RTKEY (WIP)", command=rtkey_gui)
@@ -486,13 +548,15 @@ def user_gui():
     test_button = tk.Button(window, text="Test command API", command=test_command)
     logout_button = tk.Button(window, text="Logout", command=login)
     exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
-    token_label = tk.Label(window,text=token)
-    send_button.pack()
+    token_label = tk.Label(window,text="Token : "+str(token))
+#    send_button.pack()
     send_api_button.pack()
-    read_button.pack()
+#    read_button.pack()
     read_api_button.pack()
-    invite_button.pack()
-    grant_button.pack()
+#    invite_button.pack()
+    invite_api_button.pack()
+    grant_api_button.pack()
+#    grant_button.pack()
     drop_button.pack()
     rtkey_button.pack()
     rsa_button.pack()
@@ -501,9 +565,9 @@ def user_gui():
     aes_cipher_button.pack()
     aes_uncipher_button.pack()
     test_button.pack()
-    token_label.pack()
     logout_button.pack()
     exit_button.pack()
+    token_label.pack()
 
 def login():
     clear_gui()
