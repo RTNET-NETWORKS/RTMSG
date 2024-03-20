@@ -338,6 +338,10 @@ def send_command(command,content):
     response = requests.post(api_url+"/command", json={'user_name': username, 'token': token, 'command': command, 'content': content}, verify=False)
     if response.status_code == 200:
         success = True
+        if response.json()['command']:
+            if response.json()['command']:
+                content = response.json()['command']
+                return success, content
     else:
         success = False
     token = token.encode('latin-1')
@@ -392,6 +396,35 @@ def send_message_api_gui():
     send_button = tk.Button(window, text="Send message", command=send_message_api_button)
     send_button.pack()
 
+def read_message_api_gui():
+    clear_gui()
+    label_array = tk.Label(window, text="")
+    username = assign_username()
+    read_state = tk.BooleanVar()
+    case = tk.Checkbutton(window, text="Red messages", variable=read_state)
+    case.pack()
+
+    def read_message_api_button():
+        read = read_state.get()
+        command = 'read_message'
+        content = case.get()
+        success, content = send_command(command,content)
+        return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
+        if success:
+            array = content
+            array_str = "\n".join(array)
+            label_array.config(text=array_str)
+            label_array.pack()
+        else:
+            message = tk.Label(window, text="Error while reading messages")
+            message.pack()
+            return_button.pack()
+
+    check_button = tk.Button(window, text="Check messages", command=read_message_api_button)
+    gui_button = tk.Button(window, text="Return to main menu", command=user_gui)
+    check_button.pack()
+    gui_button.pack()
+
 def exit_rtmsg():
     exit(0)
 
@@ -400,6 +433,7 @@ def user_gui():
     send_button = tk.Button(window, text="Send message", command=send_message_gui)
     send_api_button = tk.Button(window, text="Send message (API)", command=send_message_api_gui)
     read_button = tk.Button(window, text="Read message", command=read_message_gui)
+    read_button = tk.Button(window, text="Read message (API)", command=read_message_api_gui)
     invite_button = tk.Button(window, text="Invite a user", command=invite_gui)
     grant_button = tk.Button(window, text="Grant user", command=grant_user_gui)
     drop_button = tk.Button(window, text="Drop user", command=drop_user_gui)

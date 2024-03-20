@@ -175,6 +175,43 @@ def send_message(content):
 	unknown_user = False
 	return unknown_user
 
+def read_message(content):
+	user = content[0]
+	read = content[2]
+	db = sql_conn()
+	c = db.cursor()
+	messages = []
+	if not read:
+		c.execute("select user from users where user = '"+user+"';")
+		result = c.fetchone()
+		if result:
+			fini = 0
+			while fini != 1:
+				c.execute("select * from messages where target = '"+user+"' and message_read = 0;")
+				result = c.fetchone()
+				if result:
+#					message_decode = decrypt_message_with_private_key("private_key_"+user+".pem", result[3])
+					final = [result[1],result[3]]
+					c.execute("update messages set message_read = 1 where id = "+str(result[0])+";")
+					messages.append(final)
+				else:
+					fini = 1
+	else:
+		c.execute("select user from users where user = '"+user+"';")
+		result = c.fetchone()
+		if result:
+			c.execute("select * from messages where target = '"+user+"' and message_read = 1;")
+			result = c.fetchall()
+			if result:
+				for message in result:
+#					message_decode = decrypt_message_with_private_key("private_key_"+user+".pem", message_individuel[3])
+					final = [message[1],message[3]]
+					messages.append(final)
+	db.commit()
+	c.close()
+	db.close()
+	return messages
+
 @app.route('/login', methods=['POST'])
 def login():
     user_name = request.json.get('user_name')
@@ -262,6 +299,15 @@ def command():
 		elif command == "testRTMSG":
 			print("Test Ok")
 			return jsonify({'message': 'Successful'})
+		elif command == "read_message":
+			result = read_message(content)
+			if result:
+				return jsonify({'command': 'read_message', 'result' : result})
+			else:
+				print("Error reading message")
+				return jsonify({'message': 'Error reading message'}),401
+		else:
+			return jsonify({'message': 'Command unknown'}), 404
 	else:
 		return jsonify({'message': 'Error'}), 401
 
