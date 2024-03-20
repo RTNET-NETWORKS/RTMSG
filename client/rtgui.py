@@ -336,15 +336,22 @@ def send_command(command,content):
     global token
     token = token.decode('latin-1')
     response = requests.post(api_url+"/command", json={'user_name': username, 'token': token, 'command': command, 'content': content}, verify=False)
+    result = response.json()
     if response.status_code == 200:
         success = True
         print("Retour reçu")
-        if 'command' in response:
-            print(response.json()['command'])
-            if response.json()['command'] == "read_message":
-                content = response.json()['result']
+        print(result)
+        message = result.get('result')
+        try:
+            command = result.get('command')
+            if command == "read_message":
+                content = message
+                print("Retour serveur")
+                print(content)
                 token = token.encode('latin-1')
                 return content
+        except KeyError as e:    
+            print("Pas de champ commande")
     else:
         success = False
     token = token.encode('latin-1')
@@ -416,15 +423,15 @@ def read_message_api_gui():
         print(content)
         content = send_command(command,content)
         return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
+        message = tk.Label(window, text="")
         if content:
             array = content
-            array_str = "\n".join(array)
-            label_array.config(text=array_str)
+            label_array.config(text=array)
             label_array.pack()
         else:
-            message = tk.Label(window, text="Error while reading messages")
-            message.pack()
-            return_button.pack()
+            message.config(text="Error while reading messages")
+        message.pack()
+        return_button.pack()
 
     check_button = tk.Button(window, text="Check messages", command=read_message_api_button)
     gui_button = tk.Button(window, text="Return to main menu", command=user_gui)

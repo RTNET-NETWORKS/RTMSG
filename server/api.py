@@ -302,7 +302,7 @@ def command():
 			result = read_message(user,content)
 			if result:
 				print(result)
-				return jsonify({'command': 'read_message', 'result' : result})
+				return jsonify({'command': 'read_message', 'message' : result})
 			else:
 				print("Error reading message")
 				return jsonify({'message': 'Error reading message'}),401
