@@ -516,7 +516,7 @@ def invite_api_gui():
         message = tk.Label(window, text="")
         return_button = tk.Button(window, text="Return to main menu", command=user_gui)
         print(error)
-        if error == "error":
+        if error == False:
             message.config(text="Error creating invitation code")
         else:
             message.config(text="Code created for "+target+" : "+error)
