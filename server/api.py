@@ -175,9 +175,8 @@ def send_message(content):
 	unknown_user = False
 	return unknown_user
 
-def read_message(content):
-	user = content[0]
-	read = content[2]
+def read_message(user,content):
+	read = content[0]
 	db = sql_conn()
 	c = db.cursor()
 	messages = []
@@ -300,7 +299,7 @@ def command():
 			print("Test Ok")
 			return jsonify({'message': 'Successful'})
 		elif command == "read_message":
-			result = read_message(content)
+			result = read_message(user,content)
 			if result:
 				return jsonify({'command': 'read_message', 'result' : result})
 			else:

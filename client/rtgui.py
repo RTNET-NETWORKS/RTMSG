@@ -341,8 +341,8 @@ def send_command(command,content):
         print("Retour reçu")
         if 'command' in response:
             print(response.json()['command'])
-            if response.json()['command']:
-                content = response.json()['command']
+            if response.json()['command'] == "read_message":
+                content = response.json()['result']
                 token = token.encode('latin-1')
                 return success, content
     else:
@@ -409,6 +409,7 @@ def read_message_api_gui():
     def read_message_api_button():
         content = read_state.get()
         command = 'read_message'
+        print(content)
         success, content = send_command(command,content)
         return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
         if success:
