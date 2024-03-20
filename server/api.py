@@ -289,7 +289,7 @@ def grant_user(user,content):
 	db.close()
 
 def random_invite(length):
-	caracteres = string.ascii_letters + string.digits + string.punctuation + " "
+	caracteres = string.ascii_letters + string.digits
 	code = ''.join(random.choice(caracteres) for _ in range(length))
 	return code
 
