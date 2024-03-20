@@ -330,14 +330,48 @@ def rsa_gen_gui():
     name_entry.pack()
     send_button.pack()
 
+def decrypt_message_with_private_key(private_key_path, encrypted_message):
+    # Charger la clé privée depuis le fichier PEM
+    with open(private_key_path, "rb") as key_file:
+        private_key = serialization.load_pem_private_key(
+            key_file.read(),
+            password=None,
+            backend=default_backend()
+        )
+
+    # Décoder le message chiffré depuis la base64
+    decoded_encrypted_message = base64.b64decode(encrypted_message)
+
+    # Déchiffrer le message avec la clé privée
+    decrypted_message = private_key.decrypt(
+        decoded_encrypted_message,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+
+    return decrypted_message.decode()
+
 def send_command(command,content):
     clear_gui()
     username = assign_username()
     global token
     token = token.decode('latin-1')
     response = requests.post(api_url+"/command", json={'user_name': username, 'token': token, 'command': command, 'content': content}, verify=False)
+    result = response.json()
     if response.status_code == 200:
         success = True
+        message = result.get('message')
+        try:
+            command = result.get('command')
+            if command == "read_message":
+                content = message
+                token = token.encode('latin-1')
+                return content
+        except KeyError as e:    
+            print("Pas de champ commande")
     else:
         success = False
     token = token.encode('latin-1')
@@ -392,6 +426,45 @@ def send_message_api_gui():
     send_button = tk.Button(window, text="Send message", command=send_message_api_button)
     send_button.pack()
 
+def read_message_api_gui():
+    clear_gui()
+    username = assign_username()
+    label_array = tk.Label(window, text="")
+    read_state = tk.BooleanVar()
+    case = tk.Checkbutton(window, text="Red messages", variable=read_state)
+    case.pack()
+
+    def read_message_api_button():
+        content = read_state.get()
+        if content:
+            content = '1'
+        else:
+            content = '0'
+        command = 'read_message'
+        print(content)
+        content = send_command(command,content)
+        return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
+        message = tk.Label(window, text="")
+        if content:
+            private_key_path = "private_key_"+username+".pem"
+            array = []
+            for i in content:
+                decrypted_message = decrypt_message_with_private_key(private_key_path,i[1])
+                print(decrypted_message)
+                array.append("Message de "+i[0]+" : "+decrypted_message)
+            array_str = "\n".join(array)
+            label_array.config(text=array_str)
+            label_array.pack()
+        else:
+            message.config(text="Error while reading messages")
+        message.pack()
+        return_button.pack()
+
+    check_button = tk.Button(window, text="Check messages", command=read_message_api_button)
+    gui_button = tk.Button(window, text="Return to main menu", command=user_gui)
+    check_button.pack()
+    gui_button.pack()
+
 def exit_rtmsg():
     exit(0)
 
@@ -400,6 +473,7 @@ def user_gui():
     send_button = tk.Button(window, text="Send message", command=send_message_gui)
     send_api_button = tk.Button(window, text="Send message (API)", command=send_message_api_gui)
     read_button = tk.Button(window, text="Read message", command=read_message_gui)
+    read_api_button = tk.Button(window, text="Read message (API)", command=read_message_api_gui)
     invite_button = tk.Button(window, text="Invite a user", command=invite_gui)
     grant_button = tk.Button(window, text="Grant user", command=grant_user_gui)
     drop_button = tk.Button(window, text="Drop user", command=drop_user_gui)
@@ -416,6 +490,7 @@ def user_gui():
     send_button.pack()
     send_api_button.pack()
     read_button.pack()
+    read_api_button.pack()
     invite_button.pack()
     grant_button.pack()
     drop_button.pack()
