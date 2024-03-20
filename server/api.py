@@ -180,7 +180,7 @@ def read_message(user,content):
 	db = sql_conn()
 	c = db.cursor()
 	messages = []
-	if not read:
+	if read == '0':
 		c.execute("select user from users where user = '"+user+"';")
 		result = c.fetchone()
 		if result:

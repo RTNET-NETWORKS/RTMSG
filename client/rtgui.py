@@ -408,6 +408,10 @@ def read_message_api_gui():
 
     def read_message_api_button():
         content = read_state.get()
+        if content:
+            content = '1'
+        else:
+            content = '0'
         command = 'read_message'
         print(content)
         success, content = send_command(command,content)
