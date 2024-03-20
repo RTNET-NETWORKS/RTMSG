@@ -242,7 +242,8 @@ def command():
 	print(token_t)
 	token = token.encode('latin-1')
 	print("User : "+user)
-	print("Token : "+token)
+	print("Token : ")
+	print(token)
 	print("Command : "+command)
 	if content is not None:
 		print("Content : "+content)
