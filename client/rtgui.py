@@ -451,8 +451,9 @@ def read_message_api_gui():
             for i in content:
                 decrypted_message = decrypt_message_with_private_key(private_key_path,i[1])
                 print(decrypted_message)
-                array.append(decrypted_message)
-            label_array.config(text=array)
+                array.append("Message de "+i[0]+" : "+decrypted_message)
+            array_str = "\n".join(array)
+            label_array.config(text=array_str)
             label_array.pack()
         else:
             message.config(text="Error while reading messages")
