@@ -447,10 +447,9 @@ def command():
 		elif command == "invite_user":
 			result = invite_user(user,content)
 			if result:
-				print("Envoi code")
-				return jsonify({'commande': 'invite_user', 'message': result})
+				return jsonify({'command': 'invite_user', 'message': result})
 			else:
-				return jsonify({'commande': 'invite_user', 'message': 'error'}),401
+				return jsonify({'command': 'invite_user', 'message': 'error'}),401
 		else:
 			return jsonify({'message': 'Command unknown'}), 404
 	else:
