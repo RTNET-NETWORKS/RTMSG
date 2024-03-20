@@ -317,9 +317,9 @@ def invite_user(user,content):
 				else:
         			# Générer un code d'invitation aléatoire
 					code = random_invite()
-					c.execute("insert into invitation values (DEFAULT,'"+user+"','"+target+"','"+code+"')")
+					c.execute("insert into invitation values (DEFAULT,'"+user+"','"+target+"','"+str(code)+"')")
 					c.execute("insert into operation values (DEFAULT, '"+user+"','invitation','"+target+"',DEFAULT);")
-					final = "Code d'invitation créé : "+code
+					final = "Code d'invitation créé : "+str(code)
 					db.commit()
 					c.close()
 					db.close()
