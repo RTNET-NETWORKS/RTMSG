@@ -11,6 +11,8 @@ from cryptography.hazmat.backends import default_backend
 import argparse
 import os
 import csv
+import random
+import string
 import jwt
 import pymysql
 import base64
@@ -286,8 +288,9 @@ def grant_user(user,content):
 	c.close()
 	db.close()
 
-def random_invite():
-	code = os.urandom(6)
+def random_invite(length):
+	caracteres = string.ascii_letters + string.digits + string.punctuation + " "
+	code = ''.join(random.choice(caracteres) for _ in range(length))
 	return code
 
 def invite_user(user,content):
@@ -316,10 +319,10 @@ def invite_user(user,content):
 					error = 2
 				else:
         			# Générer un code d'invitation aléatoire
-					code = random_invite()
-					c.execute("insert into invitation values (DEFAULT,'"+user+"','"+target+"','"+str(code)+"')")
+					code = random_invite(6)
+					c.execute("insert into invitation values (DEFAULT,'"+user+"','"+target+"','"+code+"')")
 					c.execute("insert into operation values (DEFAULT, '"+user+"','invitation','"+target+"',DEFAULT);")
-					final = "Code d'invitation créé : "+str(code)
+					final = "Code d'invitation créé : "+code
 					db.commit()
 					c.close()
 					db.close()
