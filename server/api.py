@@ -99,8 +99,8 @@ def generate_token(username):
      return token
 
 def get_token(username):
-     if username in tokens:
-     	return tokens.get(username)
+	if username in tokens:
+		return tokens.get(username)
 
 def remove_token(username):
      if username in tokens:
@@ -136,6 +136,44 @@ def find_challenge_by_username(username):
 
 def get_challenge(username):
     return challenges.get(username)
+
+def encrypt_message_with_public_key(public_key, message):
+	# Chiffrer le message avec la clé publique
+	encrypted_message = public_key.encrypt(
+		message.encode(),
+		padding.OAEP(
+			mgf=padding.MGF1(algorithm=hashes.SHA256()),
+			algorithm=hashes.SHA256(),
+			label=None
+		)
+	)
+	return encrypted_message
+
+def send_message(content):
+	user = content[0]
+	target = content[1]
+	message = content[2]
+	db = sql_conn()
+	c = db.cursor()
+	c.execute("select clef from users where user = '"+target+"';")
+	result = c.fetchone()
+	if result is None:
+		c.execute("insert into operation values (DEFAULT, '"+user+"','bad_target','"+target+"',DEFAULT);")
+		unknown_user = True
+		return unknown_user
+	else:
+		public_key_encoded = result[0]
+		decoded_public_key = base64.b64decode(public_key_encoded)
+		public_key = serialization.load_pem_public_key(decoded_public_key, backend=default_backend())
+		encrypted_message = encrypt_message_with_public_key(public_key, message)
+#		print("Message chiffré :", base64.b64encode(encrypted_message).decode())
+		c.execute("insert into operation values (DEFAULT, '"+user+"','send_message','"+target+"',DEFAULT);")
+		c.execute("insert into messages values (DEFAULT, '"+user+"','"+target+"','"+base64.b64encode(encrypted_message).decode()+"',DEFAULT);")
+	db.commit()
+	c.close()
+	db.close()
+	unknown_user = False
+	return unknown_user
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -199,11 +237,33 @@ def command():
 	user = request.json.get('user_name')
 	token = request.json.get('token')
 	command = request.json.get('command')
+	content = request.json.get('content')
 	token_t = get_token(user)
-	if token_t == token:
-		return jsonify({'message': 'Successful'})
+	print(token_t)
+	token = token.encode('latin-1')
+	print("User : "+user)
+	print("Token : ")
+	print(token)
+	print("Command : ")
+	print(command)
+	if content is not None:
+		print("Content : ")
+		print(content)
 	else:
-		return jsonify({'message': 'Error'})
+		print("No content")
+	if token_t == token:
+		if command == "send_message":
+			result = send_message(content)
+			if result:
+				print("Error sending message")
+				return jsonify({'message': 'Error'}), 401
+			else:
+				return jsonify({'message': 'Successful'})
+		elif command == "testRTMSG":
+			print("Test Ok")
+			return jsonify({'message': 'Successful'})
+	else:
+		return jsonify({'message': 'Error'}), 401
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Run Flask API with custom IP address')

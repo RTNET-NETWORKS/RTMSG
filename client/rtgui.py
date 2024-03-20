@@ -17,10 +17,10 @@ import requests
 import time
 import threading
 
-global token
 token = ""
 
 def store_token(token_r):
+    global token
     token = token_r
 
 def assign_username():
@@ -330,14 +330,17 @@ def rsa_gen_gui():
     name_entry.pack()
     send_button.pack()
 
-def send_command(command):
+def send_command(command,content):
     clear_gui()
     username = assign_username()
-    response = requests.post(api_url+"/command", json={'user_name': username, 'token': token, 'command': command}, verify=False)
+    global token
+    token = token.decode('latin-1')
+    response = requests.post(api_url+"/command", json={'user_name': username, 'token': token, 'command': command, 'content': content}, verify=False)
     if response.status_code == 200:
         success = True
     else:
         success = False
+    token = token.encode('latin-1')
     return success
 
 def test_command():
@@ -345,13 +348,49 @@ def test_command():
     message = tk.Label(window, text="")
     return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
     command = 'testRTMSG'
-    send_command(command)
-    if send_command:
+    content = None
+    success = send_command(command,content)
+    if success:
         message.config(text="Successful")
     else:
         message.config(text="Error")
     message.pack()
     return_button.pack()
+
+def send_message_api_gui():
+    clear_gui()
+    username = assign_username()
+    user_label = tk.Label(window, text="User")
+    user_entry = tk.Entry(window)
+    message_label = tk.Label(window, text="Message")
+    message_entry = tk.Entry(window)
+    user_label.pack()
+    user_entry.pack()
+    message_label.pack()
+    message_entry.pack()
+
+    def send_message_api_button():
+        clear_gui()
+        result = tk.Label(window, text="")
+        return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
+        target = user_entry.get()
+        message = message_entry.get()
+        command = 'send_message'
+        content = [username,target,message]
+        success = send_command(command,content)
+        if success:
+            result.config(text="Message sent !")
+        else:
+            result.config(text="Failed !")
+        result.pack()
+        return_button.pack()
+
+    user_label.pack()
+    user_entry.pack()
+    message_label.pack()
+    message_entry.pack()
+    send_button = tk.Button(window, text="Send message", command=send_message_api_button)
+    send_button.pack()
 
 def exit_rtmsg():
     exit(0)
@@ -359,6 +398,7 @@ def exit_rtmsg():
 def user_gui():
     clear_gui()
     send_button = tk.Button(window, text="Send message", command=send_message_gui)
+    send_api_button = tk.Button(window, text="Send message (API)", command=send_message_api_gui)
     read_button = tk.Button(window, text="Read message", command=read_message_gui)
     invite_button = tk.Button(window, text="Invite a user", command=invite_gui)
     grant_button = tk.Button(window, text="Grant user", command=grant_user_gui)
@@ -372,7 +412,9 @@ def user_gui():
     test_button = tk.Button(window, text="Test command API", command=test_command)
     logout_button = tk.Button(window, text="Logout", command=login)
     exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
+    token_label = tk.Label(window,text=token)
     send_button.pack()
+    send_api_button.pack()
     read_button.pack()
     invite_button.pack()
     grant_button.pack()
@@ -384,6 +426,7 @@ def user_gui():
     aes_cipher_button.pack()
     aes_uncipher_button.pack()
     test_button.pack()
+    token_label.pack()
     logout_button.pack()
     exit_button.pack()
 
