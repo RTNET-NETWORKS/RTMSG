@@ -100,8 +100,6 @@ def generate_token(username):
 
 def get_token(username):
 	if username in tokens:
-		print("Needed token :")
-		print(tokens.get(username))
 		return tokens.get(username)
 
 def remove_token(username):
@@ -242,6 +240,7 @@ def command():
 	content = request.json.get('content')
 	token_t = get_token(user)
 	print(token_t)
+	token = token.decode('latin-1')
 	print("User : "+user)
 	print("Token : "+token)
 	print("Command : "+command)
