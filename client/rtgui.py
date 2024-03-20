@@ -465,16 +465,48 @@ def read_message_api_gui():
     check_button.pack()
     gui_button.pack()
 
+def invite_api_gui():
+    clear_gui()
+    user_label = tk.Label(window, text="User to grant")
+    user_entry = tk.Entry(window, text="User to grant")
+    level_label = tk.Label(window, text="Level to grant")
+    user_level = tk.Entry(window, text="Level")
+
+    def grant_user_api_button():
+        user_target = user_entry.get()
+        level_target = user_level.get()
+        level_target = str(level_target)
+        command = "grant_user"
+        content = [user_target,level_target]
+        success = send_command(command,content)
+        return_button = tk.Button(window, text="Return to main menu", command=user_gui)
+        if success:
+            clear_gui()
+            message.config(text="User has been granted !")
+        else:
+            clear_gui()
+            message.config(text="Error")
+        message.pack()
+        return_button.pack()
+
+    user_button = tk.Button(window, text="Grant user", command=grant_user_api_button)
+    user_label.pack()
+    user_entry.pack()
+    level_label.pack()
+    user_level.pack()
+    user_button.pack()
+
 def exit_rtmsg():
     exit(0)
 
 def user_gui():
     clear_gui()
-    send_button = tk.Button(window, text="Send message", command=send_message_gui)
+#    send_button = tk.Button(window, text="Send message", command=send_message_gui)
     send_api_button = tk.Button(window, text="Send message (API)", command=send_message_api_gui)
-    read_button = tk.Button(window, text="Read message", command=read_message_gui)
+#    read_button = tk.Button(window, text="Read message", command=read_message_gui)
     read_api_button = tk.Button(window, text="Read message (API)", command=read_message_api_gui)
     invite_button = tk.Button(window, text="Invite a user", command=invite_gui)
+    grant_api_button = tk.Button(window, text="Grant a user (API)", command=invite_api_gui)
     grant_button = tk.Button(window, text="Grant user", command=grant_user_gui)
     drop_button = tk.Button(window, text="Drop user", command=drop_user_gui)
     rtkey_button = tk.Button(window, text="RTKEY (WIP)", command=rtkey_gui)
@@ -487,12 +519,13 @@ def user_gui():
     logout_button = tk.Button(window, text="Logout", command=login)
     exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
     token_label = tk.Label(window,text=token)
-    send_button.pack()
+#    send_button.pack()
     send_api_button.pack()
-    read_button.pack()
+#    read_button.pack()
     read_api_button.pack()
     invite_button.pack()
-    grant_button.pack()
+    grant_api_button.pack()
+#    grant_button.pack()
     drop_button.pack()
     rtkey_button.pack()
     rsa_button.pack()
