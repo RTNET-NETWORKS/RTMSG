@@ -247,7 +247,8 @@ def command():
 	print("Command : ")
 	print(command)
 	if content is not None:
-		print("Content : "+content)
+		print("Content : ")
+		print(content)
 	else:
 		print("No content")
 	if token_t == token:
