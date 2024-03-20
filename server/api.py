@@ -244,7 +244,8 @@ def command():
 	print("User : "+user)
 	print("Token : ")
 	print(token)
-	print("Command : "+command)
+	print("Command : ")
+	print(command)
 	if content is not None:
 		print("Content : "+content)
 	else:
