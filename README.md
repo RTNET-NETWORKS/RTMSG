@@ -1,23 +1,34 @@
 # RTMSG
-Logiciels clients et serveurs pour utiliser le service RTMSG
+All the tools to use RTMSG, the message and ciphering utility tool made by RTNET
 
-Cet utilitaire a pour but de permettre à l'utilisateur de se connecter et d'accéder à diverses ressources lui permettant d'utiliser la méthode de télécommunications alternative RTMSG.
+With RTMSG, you will be able to send messages to others users, while ciphering with their public keys. Every cipher operation is made by your client, on your computer.
 
-###### Fonctionnalités disponibles ######
-Envoi de courriels chiffrés
-Lecture et gestion des courriels reçus
-RTKEY, utilitaire de gestion de mots de passes
-Création de codes d'invitations pour nouveaux utilisateurs
-Gestion des permissions des utilisateurs
-Chiffrement et déchiffrement de messages avec des clefs
+Public keys are sent and stored to a database, where every user can access, so they can cipher messages with their peer's public key.
 
-###### Paquets nécessaires #####
+Public keys are also used for authentication.
+
+You can also cipher files on your computer using your keys.
+
+###### Current functionnalities ######
+Sending secure mails
+Managing mails
+RTKEY, the password keeper
+Create temporary codes for new users, in order to let them export their key on their own
+Permissions levels on users (to grant, delete or invite new users)
+Ciphering and unciphering messages
+Ciphering and unciphering files
+
+###### Dependencies #####
 Python3
 Python3-cryptography
 Python3-pymysql
+Python3-tkinter
 
 ##### Instructions #####
-Créez un fichier csv nommé "db.csv", dans lequel vous entrerez quatre champs séparés par des ";" dans l'ordre respectif : Adresse de la BDD, utilisateur de la BDD, mot de passe de la BDD, BDD
-Assurez-vous de placer votre clef privée dans le même répertoire que le programme et de la nommer "private_key_USER.pem"
-Lancez le programme, entrez votre nom d'utilisateur, et vous serez connecté
-Profitez !
+Create a CSV file nammed "db.csv", in which you will enter four fields delimited by ";" : DB address, DB user, DB password, DB
+Be sure to place your private key in the same folder as the scripts, and name it "private_key_USER.pem"
+
+To create the database, just import the .sql file, and you will be able to access RTMSG via the "admin" user.
+Be sure to later delete this one !
+
+Enjoy !
