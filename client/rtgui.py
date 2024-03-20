@@ -340,6 +340,7 @@ def send_command(command,content):
         success = True
     else:
         success = False
+    token = token.encode('latin-1')
     return success
 
 def test_command():
