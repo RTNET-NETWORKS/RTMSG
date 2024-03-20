@@ -99,8 +99,9 @@ def generate_token(username):
      return token
 
 def get_token(username):
-     if username in tokens:
-     	return tokens.get(username)
+	if username in tokens:
+		print("Needed token : "+tokens.get(username))
+		return tokens.get(username)
 
 def remove_token(username):
      if username in tokens:
