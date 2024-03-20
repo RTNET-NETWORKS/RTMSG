@@ -330,6 +330,30 @@ def rsa_gen_gui():
     name_entry.pack()
     send_button.pack()
 
+def decrypt_message_with_private_key(private_key_path, encrypted_message):
+    # Charger la clé privée depuis le fichier PEM
+    with open(private_key_path, "rb") as key_file:
+        private_key = serialization.load_pem_private_key(
+            key_file.read(),
+            password=None,
+            backend=default_backend()
+        )
+
+    # Décoder le message chiffré depuis la base64
+    decoded_encrypted_message = base64.b64decode(encrypted_message)
+
+    # Déchiffrer le message avec la clé privée
+    decrypted_message = private_key.decrypt(
+        decoded_encrypted_message,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()),
+            algorithm=hashes.SHA256(),
+            label=None
+        )
+    )
+
+    return decrypted_message.decode()
+
 def send_command(command,content):
     clear_gui()
     username = assign_username()
@@ -339,15 +363,11 @@ def send_command(command,content):
     result = response.json()
     if response.status_code == 200:
         success = True
-        print("Retour reçu")
-        print(result)
-        message = result.get('result')
+        message = result.get('message')
         try:
             command = result.get('command')
             if command == "read_message":
                 content = message
-                print("Retour serveur")
-                print(content)
                 token = token.encode('latin-1')
                 return content
         except KeyError as e:    
@@ -408,6 +428,7 @@ def send_message_api_gui():
 
 def read_message_api_gui():
     clear_gui()
+    username = assign_username()
     label_array = tk.Label(window, text="")
     read_state = tk.BooleanVar()
     case = tk.Checkbutton(window, text="Red messages", variable=read_state)
@@ -425,7 +446,12 @@ def read_message_api_gui():
         return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
         message = tk.Label(window, text="")
         if content:
-            array = content
+            private_key_path = "private_key_"+username+".pem"
+            array = []
+            for i in content:
+                decrypted_message = decrypt_message_with_private_key(private_key_path,i[1])
+                print(decrypted_message)
+                array.append(decrypted_message)
             label_array.config(text=array)
             label_array.pack()
         else:
