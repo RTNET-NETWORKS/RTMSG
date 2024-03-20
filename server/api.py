@@ -309,14 +309,14 @@ def invite_user(user,content):
 			if result:
 				print("Utilisateur déjà existant")
 				c.execute("insert into operation values (DEFAULT, '"+user+"','bad_invitation','"+target+"',DEFAULT);")
-				error = 1
+				error = "error"
 			else:
 				c.execute("select target from invitation where target = '"+target+"';")
 				result = c.fetchone()
 				if result:
 					print("Utilisateur déjà invité")
 					c.execute("insert into operation values (DEFAULT, '"+user+"','bad_invitation','"+target+"',DEFAULT);")
-					error = 2
+					error = "error"
 				else:
         			# Générer un code d'invitation aléatoire
 					code = random_invite(6)
@@ -330,11 +330,11 @@ def invite_user(user,content):
 		else:
 			print("Opération refusée")
 			c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
-			error = 3
+			error = "error"
 	else:
 		print("Opération refusée")
 		c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
-		error = 4
+		error = "error"
 	print("")
 	db.commit()
 	c.close()
