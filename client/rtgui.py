@@ -366,7 +366,8 @@ def send_command(command,content):
         message = result.get('message')
         try:
             command = result.get('command')
-#            token = token.encode('latin-1')
+            if command:
+                token = token.encode('latin-1')
             if command == "read_message":
                 content = message
                 return content
