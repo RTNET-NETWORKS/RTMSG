@@ -316,7 +316,7 @@ def invite_user(user,content):
 					error = 2
 				else:
         			# Générer un code d'invitation aléatoire
-					code = random_invite(6)
+					code = random_invite()
 					c.execute("insert into invitation values (DEFAULT,'"+user+"','"+target+"','"+code+"')")
 					c.execute("insert into operation values (DEFAULT, '"+user+"','invitation','"+target+"',DEFAULT);")
 					final = "Code d'invitation créé : "+code
