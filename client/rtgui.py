@@ -364,9 +364,9 @@ def send_command(command,content):
     if response.status_code == 200:
         success = True
         message = result.get('message')
-        token = token.encode('latin-1')
         try:
             command = result.get('command')
+#            token = token.encode('latin-1')
             if command == "read_message":
                 content = message
                 return content
@@ -514,6 +514,7 @@ def invite_api_gui():
         error = send_command(command,content)
         message = tk.Label(window, text="")
         return_button = tk.Button(window, text="Return to main menu", command=user_gui)
+        print(error)
         if error == "error":
             message.config(text="Error creating invitation code")
         else:

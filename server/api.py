@@ -322,7 +322,7 @@ def invite_user(user,content):
 					code = random_invite(6)
 					c.execute("insert into invitation values (DEFAULT,'"+user+"','"+target+"','"+code+"')")
 					c.execute("insert into operation values (DEFAULT, '"+user+"','invitation','"+target+"',DEFAULT);")
-					final = "Code d'invitation créé : "+code
+					print("Code d'invitation créé : "+code)
 					db.commit()
 					c.close()
 					db.close()
