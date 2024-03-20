@@ -358,6 +358,7 @@ def test_command():
     return_button.pack()
 
 def send_message_api_gui():
+    clear_gui()
     username = assign_username()
     user_label = tk.Label(window, text="User")
     user_entry = tk.Entry(window)
