@@ -344,7 +344,7 @@ def send_command(command,content):
             if response.json()['command'] == "read_message":
                 content = response.json()['result']
                 token = token.encode('latin-1')
-                return success, content
+                return content
     else:
         success = False
     token = token.encode('latin-1')
@@ -414,9 +414,9 @@ def read_message_api_gui():
             content = '0'
         command = 'read_message'
         print(content)
-        success, content = send_command(command,content)
+        content = send_command(command,content)
         return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
-        if success:
+        if content:
             array = content
             array_str = "\n".join(array)
             label_array.config(text=array_str)
