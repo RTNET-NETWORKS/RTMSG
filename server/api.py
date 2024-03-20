@@ -286,6 +286,58 @@ def grant_user(user,content):
 	c.close()
 	db.close()
 
+def random_invite():
+	code = os.urandom(6)
+	return code
+
+def invite_user(user,content):
+	# Vérifier le niveau de permission de l'utilisateur
+	db = sql_conn()
+	c = db.cursor()
+	c.execute("select level from admin where user = '"+user+"';")
+	result = c.fetchone()
+	target = content[1]
+	error = 0
+	if result:
+		if int(result[0]) >= 3:
+			# Vérifier si l'utilisateur existe déjà
+			c.execute("select user from users where user = '"+target+"';")
+			result = c.fetchone()
+			if result:
+				print("Utilisateur déjà existant")
+				c.execute("insert into operation values (DEFAULT, '"+user+"','bad_invitation','"+target+"',DEFAULT);")
+				error = 1
+			else:
+				c.execute("select target from invitation where target = '"+target+"';")
+				result = c.fetchone()
+				if result:
+					print("Utilisateur déjà invité")
+					c.execute("insert into operation values (DEFAULT, '"+user+"','bad_invitation','"+target+"',DEFAULT);")
+					error = 2
+				else:
+        			# Générer un code d'invitation aléatoire
+					code = random_invite(6)
+					c.execute("insert into invitation values (DEFAULT,'"+user+"','"+target+"','"+code+"')")
+					c.execute("insert into operation values (DEFAULT, '"+user+"','invitation','"+target+"',DEFAULT);")
+					final = "Code d'invitation créé : "+code
+					db.commit()
+					c.close()
+					db.close()
+					return code
+		else:
+			print("Opération refusée")
+			c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
+			error = 3
+	else:
+		print("Opération refusée")
+		c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
+		error = 4
+	print("")
+	db.commit()
+	c.close()
+	db.close()
+	return error
+
 @app.route('/login', methods=['POST'])
 def login():
     user_name = request.json.get('user_name')
@@ -389,6 +441,12 @@ def command():
 				return jsonify({'message': 'Unknown user'}),404
 			elif result == 2:
 				return jsonify({'message': 'Forbidden'}),403
+		elif command == "invite_user":
+			result = invite_user(user,content)
+			if result:
+				return jsonify({'commande': 'invite_user', 'message': result})
+			else:
+				return jsonify({'commande': 'invite_user', 'message': 'error'})
 		else:
 			return jsonify({'message': 'Command unknown'}), 404
 	else:
