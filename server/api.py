@@ -446,7 +446,7 @@ def command():
 				return jsonify({'message': 'Forbidden'}),403
 		elif command == "invite_user":
 			result = invite_user(user,content)
-			if result:
+			if result != "error":
 				return jsonify({'command': 'invite_user', 'message': result})
 			else:
 				return jsonify({'command': 'invite_user', 'message': 'error'}),401
