@@ -359,6 +359,7 @@ def save_public_key_to_database(username, encoded_public_key, user_t):
 		query = "INSERT INTO users (user, clef) VALUES (%s, %s)"
 		c.execute(query, (user_t, encoded_public_key))
 		c.execute("insert into operation values (DEFAULT, '"+username+"','register_user','"+user_t+"',DEFAULT);")
+		c.execute("DELETE FROM invitation WHERE target = '"+username+"';")
 		success = True
 	# Valider la transaction et fermer le curseur et la connexion
 	db.commit()

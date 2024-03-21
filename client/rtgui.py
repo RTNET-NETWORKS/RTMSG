@@ -540,7 +540,7 @@ def enter_invite_api():
         code = invite_entry.get()
         api_url = "https://"+url_entry.get()+":5000"
         label = tk.Label(window, text="")
-        return_button = tk.Button(window, text="Return to authentication menu")
+        return_button = tk.Button(window, text="Return to authentication menu", command=login)
         response = requests.post(api_url+"/invite", json={'user_name': username, 'code': code}, verify=False)
         result = response.json()
         if response.status_code == 200:
@@ -555,8 +555,11 @@ def enter_invite_api():
                     label.config(text="Success ! Try to login now")
                 else:
                     label.config(text="Error while creating key")
-                label.pack()
-                return_button.pack()
+        else:
+            label.config(text="Error while sending request")
+        label.pack()
+        return_button.pack()
+        
                 
 
     invite_button = tk.Button(window, text="Send invitation code", command=enter_invite_button)
