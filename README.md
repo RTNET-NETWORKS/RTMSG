@@ -23,12 +23,26 @@ Python3
 Python3-cryptography
 Python3-pymysql
 Python3-tkinter
+Python3-flask
+Python3-argparse
+Python3-os
+Python3-csv
+Python3-random
+Python3-base64
+Python3-string
+Python3-jwt
+Python3-requests
 
-##### Instructions #####
+##### Server instructions #####
 Create a CSV file nammed "db.csv", in which you will enter four fields delimited by ";" : DB address, DB user, DB password, DB
-Be sure to place your private key in the same folder as the scripts, and name it "private_key_USER.pem"
 
 To create the database, just import the .sql file, and you will be able to access RTMSG via the "admin" user.
-Be sure to later delete this one !
+Be sure to delete this one later !
 
 Enjoy !
+
+##### Client instructions #####
+After an administrator gave you an invitation code, launch rtgui.py, type your username, and go to "Enter activation code".
+It will create a key pair, and you will be able to log !
+
+If you use the new API, be sure to log with "Authenticate with API"
