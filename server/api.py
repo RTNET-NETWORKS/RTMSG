@@ -78,6 +78,7 @@ app = Flask(__name__)
 
 challenges = {}
 tokens = {}
+waiting = []
 
 with open("public_key_api.pem", "rb") as key_file:
     api_public_key = serialization.load_pem_public_key(
@@ -341,6 +342,46 @@ def invite_user(user,content):
 	db.close()
 	return error
 
+def save_public_key_to_database(username, encoded_public_key, user_t):
+	# Établir la connexion à la base de données
+	db = sql_conn()
+	c = db.cursor()
+	c.execute("select user from users where user = '"+user_t+"';")
+	print("")
+	success = False
+	if c.fetchone():
+		print("Utilisateur existant")
+		query = "UPDATE users SET clef = %s WHERE user = %s"
+		c.execute(query, (encoded_public_key, user_t))
+		c.execute("insert into operation values (DEFAULT, '"+username+"','change_key','"+user_t+"',DEFAULT);")
+	else:
+		# Exécuter la requête SQL pour insérer la clé publique dans la base de données
+		query = "INSERT INTO users (user, clef) VALUES (%s, %s)"
+		c.execute(query, (user_t, encoded_public_key))
+		c.execute("insert into operation values (DEFAULT, '"+username+"','register_user','"+user_t+"',DEFAULT);")
+		c.execute("DELETE FROM invitation WHERE target = '"+username+"';")
+		success = True
+	# Valider la transaction et fermer le curseur et la connexion
+	db.commit()
+	c.close()
+	db.close()
+	return success
+
+@app.route('/send', methods=['POST'])
+def send():
+	user_name = request.json.get('user_name')
+	public_key = request.json.get('public_key')
+	if user_name in waiting:
+		result = save_public_key_to_database(user_name,public_key,user_name)
+		if result:
+			return jsonify({'message': 'success'})
+		else:
+			return jsonify({'message': 'error'})
+	else:
+		return jsonify({'message': 'error'})
+
+
+
 @app.route('/login', methods=['POST'])
 def login():
     user_name = request.json.get('user_name')
@@ -397,6 +438,26 @@ def verify():
             return jsonify({'message': 'User not found'}), 404
     else:
         return jsonify({'message': 'Response or user name is missing'}), 400
+
+@app.route('/invite', methods=['POST'])
+def invite():
+	user = request.json.get('user_name')
+	code = request.json.get('code')
+	db = sql_conn()
+	c = db.cursor()
+	c.execute('select code from invitation where target = "'+user+'";')
+	result = c.fetchone()
+	if result:
+		if code in result:
+			if not user in waiting:
+				waiting.append(user)
+				return jsonify({'message': 'send_public_key'})
+			else:
+				return jsonify({'message': 'error'}),401
+		else:
+			return jsonify({'message': 'error'}),401
+	else:
+		return jsonify({'message': 'error'}),401
 
 @app.route('/command', methods=['POST'])
 def command():

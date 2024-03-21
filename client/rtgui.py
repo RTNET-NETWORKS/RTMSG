@@ -8,6 +8,7 @@ from tkinter import ttk
 from tkinter import filedialog
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import hashes
@@ -525,6 +526,93 @@ def invite_api_gui():
 
     send_button = tk.Button(window, text="Send invitation", command=send_invite_api_button)
     send_button.pack()
+
+def enter_invite_api():
+    clear_gui()
+    username = assign_username()
+    invite_label = tk.Label(window, text="Invitation code")
+    invite_entry = tk.Entry(window, text="Invitation code")
+    url_label = tk.Label(window, text="IP")
+    url_entry = tk.Entry(window, text="URL")
+
+    def enter_invite_button():
+        clear_gui()
+        code = invite_entry.get()
+        api_url = "https://"+url_entry.get()+":5000"
+        label = tk.Label(window, text="")
+        return_button = tk.Button(window, text="Return to authentication menu", command=login)
+        response = requests.post(api_url+"/invite", json={'user_name': username, 'code': code}, verify=False)
+        result = response.json()
+        if response.status_code == 200:
+            message = result.get('message')
+            if message == "send_public_key":
+                send = 0
+                private_key, public_key = generate_rsa(username,username,send)
+                print("Envoi au serveur")
+                response = requests.post(api_url+"/send", json={'user_name': username, 'public_key': public_key}, verify=False)
+                result = response.json()
+                if result.get('message') == 'success':
+                    label.config(text="Success ! Try to login now")
+                else:
+                    label.config(text="Error while creating key")
+        else:
+            label.config(text="Error while sending request")
+        label.pack()
+        return_button.pack()
+        
+                
+
+    invite_button = tk.Button(window, text="Send invitation code", command=enter_invite_button)
+    return_button = tk.Button(window, text="Return to authentication menu", command=login)
+    invite_label.pack()
+    invite_entry.pack()
+    url_label.pack()
+    url_entry.pack()
+    invite_button.pack()
+    return_button.pack()
+
+def generate_rsa(user_t,user,send):
+	# Générer une paire de clés RSA
+	private_key = rsa.generate_private_key(
+		public_exponent=65537,
+		key_size=2048,
+		backend=default_backend()
+	)
+	public_key = private_key.public_key()
+
+	# Sérialiser la clé privée au format PEM et l'enregistrer dans un fichier
+	with open("private_key_"+user_t+".pem", "wb") as f:
+		private_key_pem = private_key.private_bytes(
+			encoding=serialization.Encoding.PEM,
+			format=serialization.PrivateFormat.PKCS8,
+			encryption_algorithm=serialization.NoEncryption()
+		)
+		f.write(private_key_pem)
+
+	# Sérialiser la clé publique au format PEM
+	public_key_pem = public_key.public_bytes(
+		encoding=serialization.Encoding.PEM,
+		format=serialization.PublicFormat.SubjectPublicKeyInfo
+	)
+
+    # Encoder la clé publique en base64 avant de l'enregistrer dans la base de données
+	encoded_public_key = base64.b64encode(public_key_pem).decode()
+
+	# Enregistrer la clé publique dans la base de données (remplacez "user1" par le nom d'utilisateur approprié)
+	if send == 0:
+		print("Clef privée :")
+		print(private_key_pem.decode())
+		print("")
+		print("Clef publique :")
+		print(public_key_pem.decode())
+	elif send == 2:
+		with open("public_key_"+user_t+".pem", "wb") as f:
+			f.write(public_key_pem)
+		error = 0
+		return error
+
+	return private_key_pem, encoded_public_key
+
 def exit_rtmsg():
     exit(0)
 
@@ -537,7 +625,7 @@ def user_gui():
 #    invite_button = tk.Button(window, text="Invite a user", command=invite_gui)
     invite_api_button = tk.Button(window, text="Invite a user (API)", command=invite_api_gui)
     grant_api_button = tk.Button(window, text="Grant a user (API)", command=grant_api_gui)
-    grant_button = tk.Button(window, text="Grant user", command=grant_user_gui)
+#    grant_button = tk.Button(window, text="Grant user", command=grant_user_gui)
     drop_button = tk.Button(window, text="Drop user", command=drop_user_gui)
     rtkey_button = tk.Button(window, text="RTKEY (WIP)", command=rtkey_gui)
     rsa_button = tk.Button(window, text="Generate RSA keys", command=rsa_gen_gui)
@@ -574,6 +662,7 @@ def login():
     entry.pack()
     launch.pack()
     launch_api.pack()
+    launch_invite_api.pack()
     exit_button.pack()
 
 def login_api():
@@ -654,10 +743,12 @@ message = tk.Label(window, text="")
 entry = tk.Entry(window, text="Login")
 launch = tk.Button(window, text="Authenticate", command=call_gs)
 launch_api = tk.Button(window, text="Authenticate with API (WIP)", command=login_api)
+launch_invite_api = tk.Button(window, text="Enter invitation code", command=enter_invite_api)
 exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
 entry.pack()
 launch.pack()
 launch_api.pack()
+launch_invite_api.pack()
 exit_button.pack()
 
 window.mainloop()
