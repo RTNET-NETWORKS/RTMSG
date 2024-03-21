@@ -371,7 +371,7 @@ def send():
 	user_name = request.json.get('user_name')
 	public_key = request.json.get('public_key')
 	if user_name in waiting:
-		result = save_public_key_to_database(user_name,public_key)
+		result = save_public_key_to_database(user_name,public_key,user_name)
 		if result:
 			return jsonify({'message': 'success'})
 		else:

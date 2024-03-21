@@ -546,7 +546,8 @@ def enter_invite_api():
             if message == "send_public_key":
                 send = 0
                 private_key, public_key = generate_rsa(username,username,send)
-                response = requests.post(api_url+"/send", json={'user_name': username, 'public_key': public_key})
+                print("Envoi au serveur")
+                response = requests.post(api_url+"/send", json={'user_name': username, 'public_key': public_key}, verify=False)
                 
 
     invite_button = tk.Button(window, text="Send invitation code", command=enter_invite_button)
