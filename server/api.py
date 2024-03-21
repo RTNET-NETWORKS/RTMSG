@@ -452,11 +452,11 @@ def invite():
 				waiting.append(user)
 				return jsonify({'message': 'send_public_key'})
 			else:
-				return jsonify({'message': 'error'})
+				return jsonify({'message': 'error'}),401
 		else:
-			return jsonify({'message': 'error'})
+			return jsonify({'message': 'error'}),401
 	else:
-		return jsonify({'message': 'error'})
+		return jsonify({'message': 'error'}),401
 
 @app.route('/command', methods=['POST'])
 def command():

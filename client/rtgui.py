@@ -532,23 +532,29 @@ def enter_invite_api():
     username = assign_username()
     invite_label = tk.Label(window, text="Invitation code")
     invite_entry = tk.Entry(window, text="Invitation code")
+    url_label = tk.Label(window, text="IP")
+    url_entry = tk.Entry(window, text="URL")
 
     def enter_invite_button():
         clear_gui()
         code = invite_entry.get()
-        result = response = requests.post(api_url+"/invite", json={'user_name': username, 'code': code}, verify=False)
+        api_url = "https://"+url_entry.get()+":5000"
+        response = requests.post(api_url+"/invite", json={'user_name': username, 'code': code}, verify=False)
+        result = response.json()
         if response.status_code == 200:
             message = result.get('message')
             if message == "send_public_key":
                 send = 0
                 private_key, public_key = generate_rsa(username,username,send)
-                public_key = public_key.decode()
-                result = response = requests.post(api_url+"/send", json={'user_name': username, 'public_key': public_key})
+                response = requests.post(api_url+"/send", json={'user_name': username, 'public_key': public_key})
+                
 
     invite_button = tk.Button(window, text="Send invitation code", command=enter_invite_button)
     return_button = tk.Button(window, text="Return to authentication menu", command=login)
     invite_label.pack()
     invite_entry.pack()
+    url_label.pack()
+    url_entry.pack()
     invite_button.pack()
     return_button.pack()
 
