@@ -3,6 +3,9 @@
 # This program intends to talk with an ESP32 controller, to send and receive LoRa information for RTMSG.
 
 import tkinter as tk
+import serial
+import glob
+import sys
 
 window = tk.Tk()
 window.title("LoRa for RTMSG")
@@ -13,6 +16,21 @@ def exit_function():
 
 def serial_connection():
     clear_gui()
+    if sys.platform.startswith('win'):
+        ports = ['COM%s' % (i + 1) for i in range(256)]
+    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+        # this excludes your current terminal "/dev/tty"
+        ports = glob.glob('/dev/tty[A-Za-z]*')
+    elif sys.platform.startswith('darwin'):
+        ports = glob.glob('/dev/tty.*')
+    result = []
+    for port in ports:
+        try:
+            s = serial.Serial(port)
+            s.close()
+            result.append(port)
+        except (OSError, serial.SerialException):
+            pass
     message = tk.Label(window, text='Serial screen')
     exit_button = tk.Button(window, text='Go back to main menu', command=go_main)
     message.pack()
