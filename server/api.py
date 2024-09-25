@@ -285,9 +285,6 @@ def grant_user(user,content):
 		db.close()
 		error = 2
 		return error
-	db.commit()
-	c.close()
-	db.close()
 
 def random_invite(length):
 	caracteres = string.ascii_letters + string.digits
@@ -375,6 +372,24 @@ def drop_user(user,content):
 	c.close()
 	db.close()
 	return error
+
+def send_public_key_to_client(user):
+	db = sql_conn()
+	c = db.cursor()
+	c.execute("select clef from users where user = '"+user+"';")
+	result = c.fetchone()
+	if result is None:
+		return result
+	else:
+		encoded_public_key = result[0]
+		print("Clef publique de "+user+" chargée !")
+	c.close()
+	db.close()
+	print("La clef : "+encoded_public_key)
+	if encoded_public_key:
+		return encoded_public_key
+	else:
+		return None
 
 def save_public_key_to_database(username, encoded_public_key, user_t):
 	# Établir la connexion à la base de données
@@ -553,6 +568,13 @@ def command():
 				return jsonify({'message': 'Dropped'}),200
 			else:
 				return jsonify({'message': 'error'}),401
+		elif command == "load_key":
+			print(command)
+			result = send_public_key_to_client(user)
+			if result:
+				return jsonify({'command': 'take_key', 'message': result}),200
+			else:
+				return jsonify({'message': 'error'}),404
 		else:
 			return jsonify({'message': 'Command unknown'}), 404
 	else:

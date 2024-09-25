@@ -16,7 +16,6 @@ import gs
 import base64
 import requests
 import time
-import threading
 
 token = ""
 
@@ -204,6 +203,14 @@ def drop_user_api_gui():
     user_target.pack()
     user_button.pack()
 
+def rtkey_api_gui():
+    clear_gui()
+    public_key_label = tk.Label(window, text=str(load_public_key()))
+    exit_button = tk.Button(window, text="Go back to main menu", command=user_gui)
+
+    public_key_label.pack()
+    exit_button.pack()
+
 def rtkey_gui():
     clear_gui()
     username = assign_username()
@@ -357,6 +364,10 @@ def decrypt_message_with_private_key(private_key_path, encrypted_message):
 
     return decrypted_message.decode()
 
+def load_public_key():
+    public_key = send_command('load_key',None)
+    return public_key
+
 def send_command(command,content):
     clear_gui()
     username = assign_username()
@@ -375,6 +386,9 @@ def send_command(command,content):
                 content = message
                 return content
             elif command == "invite_user":
+                content = message
+                return content
+            elif command == "take_key":
                 content = message
                 return content
         except KeyError as e:    
@@ -631,7 +645,7 @@ def user_gui():
     grant_api_button = tk.Button(window, text="Grant a user (API)", command=grant_api_gui)
 #    grant_button = tk.Button(window, text="Grant user", command=grant_user_gui)
     drop_button = tk.Button(window, text="Drop user", command=drop_user_api_gui)
-    rtkey_button = tk.Button(window, text="RTKEY (WIP)", command=rtkey_gui)
+    rtkey_button = tk.Button(window, text="RTKEY (WIP)", command=rtkey_api_gui)
     rsa_button = tk.Button(window, text="Generate RSA keys", command=rsa_gen_gui)
     file_button = tk.Button(window, text="Ciphering files (full RSA, up to 241 bytes)", command=file_cipher_gui)
     unfile_button = tk.Button(window, text="Unciphering files (full RSA, up to 241 bytes)", command=file_uncipher_gui)

@@ -252,10 +252,6 @@ def user_grant(user,user_g,level):
 		db.close()
 		error = 2
 		return error
-	db.commit()
-	c.close()
-	db.close()
-	print("")
 
 def send_message(user,target,message):
 	db = sql_conn()
@@ -785,8 +781,6 @@ def auth(user):
 	else:
 		logged = 1
 		return logged
-	c.close()
-	db.close()
 
 def dial(user):
 	print("")
