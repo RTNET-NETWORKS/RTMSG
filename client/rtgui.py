@@ -180,28 +180,26 @@ def grant_user_gui():
     user_level.pack()
     user_button.pack()
 
-def drop_user_gui():
+def drop_user_api_gui():
     clear_gui()
     user_target = tk.Entry(window, text="User")
     user_label = tk.Label(window, text="User to drop")
-    username = assign_username()
 
-    def drop_user_button():
-        clear_gui()
-        target = user_target.get()
-        error = gs.drop_user(username,target)
-        message = tk.Label(window, text="")
-        if error == 0:
-            message.config(text="User has been dropped")
-        elif error == 1:
-            message.config(text="Unknown user")
-        elif error == 2:
-            message.config(text="Forbidden")
+    def drop_user_api_button():
+        command = "drop_user"
+        content = [user_target.get()]
+        success = send_command(command,content)
         return_button = tk.Button(window, text="Return to main menu", command=user_gui)
+        if success:
+            clear_gui()
+            message.config(text="User has been dropped !")
+        else:
+            clear_gui()
+            message.config(text="Error")
         message.pack()
         return_button.pack()
 
-    user_button = tk.Button(window, text="Drop user", command=drop_user_button)
+    user_button = tk.Button(window, text="Drop user", command=drop_user_api_button)
     user_label.pack()
     user_target.pack()
     user_button.pack()
@@ -233,20 +231,24 @@ def rtkey_gui():
             global name_password
             name_password = name_entry.get()
             password = password_entry.get()
+            exit_button = tk.Button(window, text="Go back to RTKEY menu", command=rtkey_gui)
             send_button = tk.Button(window, text="Send password", command=rtkey_button())
             name_label.pack()
             name_entry.pack()
             password_label.pack()
             password_entry.pack()
             send_button.pack()
+            exit_button.pack()
         if choice == "Check password":
             choice = "s"
             error = gs.rtkey(username,choice,name_password,password)
 
     choice_button = tk.Button(window, text="Make a choice", command=choice_function)
+    exit_button = tk.Button(window, text="Go back to main menu", command=user_gui)
     label.pack()
     choice_entry.pack()
     choice_button.pack()
+    exit_button.pack()
 
 def file_cipher_gui():
     username = assign_username()
@@ -605,6 +607,8 @@ def generate_rsa(user_t,user,send):
 		print("")
 		print("Clef publique :")
 		print(public_key_pem.decode())
+		with open('public_key_'+user_t+'.pem', 'wb') as f:
+			f.write(public_key_pem)
 	elif send == 2:
 		with open("public_key_"+user_t+".pem", "wb") as f:
 			f.write(public_key_pem)
@@ -626,7 +630,7 @@ def user_gui():
     invite_api_button = tk.Button(window, text="Invite a user (API)", command=invite_api_gui)
     grant_api_button = tk.Button(window, text="Grant a user (API)", command=grant_api_gui)
 #    grant_button = tk.Button(window, text="Grant user", command=grant_user_gui)
-    drop_button = tk.Button(window, text="Drop user", command=drop_user_gui)
+    drop_button = tk.Button(window, text="Drop user", command=drop_user_api_gui)
     rtkey_button = tk.Button(window, text="RTKEY (WIP)", command=rtkey_gui)
     rsa_button = tk.Button(window, text="Generate RSA keys", command=rsa_gen_gui)
     file_button = tk.Button(window, text="Ciphering files (full RSA, up to 241 bytes)", command=file_cipher_gui)

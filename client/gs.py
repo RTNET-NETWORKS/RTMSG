@@ -105,6 +105,8 @@ def generate_rsa_key_pair(user_t,user,send):
 		print("")
 		print("Clef publique :")
 		print(public_key_pem.decode())
+		with open("public_key_"+user_t+".pem", "wb") as f:
+			f.write(public_key_pem)
 	elif send == 2:
 		with open("public_key_"+user_t+".pem", "wb") as f:
 			f.write(public_key_pem)
@@ -431,22 +433,10 @@ def real_time(user):
 	server.close()
 
 def file_cipher(user,file):
-	db = sql_conn()
-	c = db.cursor()
-	c.execute("select clef from users where user = '"+user+"';")
-	result = c.fetchone()
-	if result is None:
-		c.execute("insert into operation values (DEFAULT, '"+user+"','bad_target','"+user+"',DEFAULT);")
-		db.commit()
-		c.close()
-		db.close()
-		unknown_user = 1
-		return unknown_user
-	else:
-		public_key_encoded = result[0]
-		decoded_public_key = base64.b64decode(public_key_encoded)
-		public_key = serialization.load_pem_public_key(decoded_public_key, backend=default_backend())
-
+	with open('public_key_'+user+'.pem', 'rb') as f:
+		public_key_encoded = f.read()
+	decoded_public_key = base64.b64decode(public_key_encoded)
+	public_key = serialization.load_pem_public_key(decoded_public_key, backend=default_backend())
 	bloc_size = 256
 	encrypted_data = b""
 	with open(file, "rb") as f:
@@ -462,11 +452,6 @@ def file_cipher(user,file):
 	encrypted_file = file+"_encrypted"
 	with open(encrypted_file, "wb") as f:
 		f.write(encrypted_data)
-	db.commit()
-	c.close()
-	db.close()
-	unknown_user = 0
-	return unknown_user
 
 def file_uncipher(user,file):
 	private_key = "private_key_"+user+".pem"
@@ -609,21 +594,10 @@ def aes_uncipher(key,encrypted_data):
 
 def hybrid_ciphering(user,file):
 	secret_key = generate_aes_key()
-	db = sql_conn()
-	c = db.cursor()
-	c.execute("select clef from users where user = '"+user+"';")
-	result = c.fetchone()
-	if result is None:
-		c.execute("insert into operation values (DEFAULT, '"+user+"','bad_target','"+user+"',DEFAULT);")
-		db.commit()
-		c.close()
-		db.close()
-		unknown_user = 1
-		return unknown_user
-	else:
-		public_key_encoded = result[0]
-		decoded_public_key = base64.b64decode(public_key_encoded)
-		public_key = serialization.load_pem_public_key(decoded_public_key, backend=default_backend())
+	with open('public_key_'+user+'.pem', 'rb') as f:
+		public_key_encoded = f.read()
+	decoded_public_key = base64.b64decode(public_key_encoded)
+	public_key = serialization.load_pem_public_key(decoded_public_key, backend=default_backend())
 	
 	with open(file, "rb") as f:
 		clear_data = f.read()
@@ -642,9 +616,6 @@ def hybrid_ciphering(user,file):
 	with open(encrypted_file, "wb") as f:
 		f.write(secret_key_encrypted+aes_data)
 
-	db.commit()
-	c.close()
-	db.close()
 	unknown_user = 0
 	return unknown_user
 

@@ -342,6 +342,40 @@ def invite_user(user,content):
 	db.close()
 	return error
 
+def drop_user(user,content):
+	# Vérifier le niveau de permission de l'utilisateur
+	db = sql_conn()
+	c = db.cursor()
+	c.execute("select level from admin where user = '"+user+"';")
+	result = c.fetchone()
+	target = content[0]
+	error = 0
+	if result:
+		if int(result[0]) >= 3:
+			# Vérifier si l'utilisateur existe déjà
+			c.execute("select user from users where user = '"+target+"';")
+			result = c.fetchone()
+			if result:
+				c.execute("delete from users where user = '"+target+"';")
+				c.execute("insert into operation values (DEFAULT, '"+user+"','drop_user','"+target+"',DEFAULT);")
+				db.commit()
+				c.close()
+				db.close()
+				return 0
+			else:
+				c.execute("insert into operation values (DEFAULT, '"+user+"','bad_target','"+target+"',DEFAULT);")
+				error = "error"
+		else:
+			c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
+			error = "error"
+	else:
+		c.execute("insert into operation values (DEFAULT, '"+user+"','forbidden','"+target+"',DEFAULT);")
+		error = "error"
+	db.commit()
+	c.close()
+	db.close()
+	return error
+
 def save_public_key_to_database(username, encoded_public_key, user_t):
 	# Établir la connexion à la base de données
 	db = sql_conn()
@@ -511,6 +545,14 @@ def command():
 				return jsonify({'command': 'invite_user', 'message': result})
 			else:
 				return jsonify({'command': 'invite_user', 'message': 'error'}),401
+		elif command == "drop_user":
+			print(user)
+			print(content)
+			result = drop_user(user,content)
+			if result == 0:
+				return jsonify({'message': 'Dropped'}),200
+			else:
+				return jsonify({'message': 'error'}),401
 		else:
 			return jsonify({'message': 'Command unknown'}), 404
 	else:
