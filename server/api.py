@@ -6,6 +6,7 @@
 from flask import Flask, request, jsonify
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.backends import default_backend
 import argparse
@@ -25,6 +26,38 @@ def sql_conn():
 			donnees.append(row)
 	db=pymysql.connect(host=donnees[0][0], charset="utf8",user=donnees[0][1], passwd=donnees[0][2],db=donnees[0][3])
 	return db
+
+def generate_rsa_key_pair():
+	# Générer une paire de clés RSA
+	private_key = rsa.generate_private_key(
+		public_exponent=65537,
+		key_size=2048,
+		backend=default_backend()
+	)
+	with open("private_key_api.pem", "wb") as f:
+		private_key_pem = private_key.private_bytes(
+			encoding=serialization.Encoding.PEM,
+			format=serialization.PrivateFormat.PKCS8,
+			encryption_algorithm=serialization.NoEncryption()
+		)
+		f.write(private_key_pem)
+    # Obtenir la clé publique
+	public_key = private_key.public_key()
+
+    # Sérialiser la clé privée au format PEM
+	private_key_pem = private_key.private_bytes(
+		encoding=serialization.Encoding.PEM,
+		format=serialization.PrivateFormat.PKCS8,
+		encryption_algorithm=serialization.NoEncryption()
+	)
+
+	# Sérialiser la clé publique au format PEM
+	public_key_pem = public_key.public_bytes(
+		encoding=serialization.Encoding.PEM,
+		format=serialization.PublicFormat.SubjectPublicKeyInfo
+	)
+
+	return private_key_pem, public_key_pem
 
 def save_public_key_to_database(username, encoded_public_key, user_t):
 	# Établir la connexion à la base de données
@@ -80,11 +113,20 @@ challenges = {}
 tokens = {}
 waiting = []
 
-with open("public_key_api.pem", "rb") as key_file:
-    api_public_key = serialization.load_pem_public_key(
-        key_file.read(),
-        backend=None
-    )
+if not os.path.isfile("public_key_api.pem") and not os.path.isfile("private_key_api.pem"):
+	print("Missing keyfiles ...")
+	print("Generating keypair ...")
+	generate_rsa_key_pair()
+	print("Keypair generating. Resume api.py starting")
+
+
+# Keep for further use
+
+#with open("public_key_api.pem", "rb") as key_file:
+#    api_public_key = serialization.load_pem_public_key(
+#        key_file.read(),
+#        backend=None
+#    )
 
 with open("private_key_api.pem", "rb") as key_file:
     api_private_key = serialization.load_pem_private_key(
@@ -559,10 +601,16 @@ def command():
 		return jsonify({'message': 'Error'}), 401
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Run Flask API with custom IP address')
-    parser.add_argument('ip_address', type=str, help='IP address to listen on')
-    args = parser.parse_args()
+	parser = argparse.ArgumentParser(description='Run Flask API with custom IP address')
+	parser.add_argument('ip_address', type=str, help='IP address to listen on')
+	args = parser.parse_args()
 
-    ip_address = args.ip_address
+	if args.ip_address == "generate":
+		print("New keypair will be generated")
+		print("You will have to launch another time the api")
+		generate_rsa_key_pair()
+		exit(0)
 
-    app.run(host=ip_address, ssl_context='adhoc')
+	ip_address = args.ip_address
+
+	app.run(host=ip_address, ssl_context='adhoc')

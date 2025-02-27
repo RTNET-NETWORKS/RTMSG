@@ -1,1 +1,5 @@
 client/db.csv
+server/db.csv
+server/private_key_api.pem
+server/public_key_api.pem
+client/__pycache__/

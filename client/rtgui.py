@@ -123,6 +123,7 @@ def invite_gui():
     clear_gui()
     username = assign_username()
     target_entry = tk.Entry(window, text="User to invite")
+    return_button = tk.Button(window, text="Return to main menu", command=user_gui)
     target_entry.pack()
     
 
@@ -131,7 +132,6 @@ def invite_gui():
         target = target_entry.get()
         error = gs.invite(username,target)
         message = tk.Label(window, text="")
-        return_button = tk.Button(window, text="Return to main menu", command=user_gui)
         if error == 1:
             message.config(text="User already exists !")
         elif error == 2:
@@ -144,6 +144,7 @@ def invite_gui():
         return_button.pack()
 
     send_button = tk.Button(window, text="Send invitation", command=send_invite_button)
+    return_button.pack()
     send_button.pack()
 
 def grant_user_gui():
@@ -159,8 +160,8 @@ def grant_user_gui():
         level_target = str(level_target)
         username = assign_username()
         error = gs.user_grant(username,user_target,level_target)
-        message = tk.Label(window, text="")
         return_button = tk.Button(window, text="Return to main menu", command=user_gui)
+        message = tk.Label(window, text="")
         if error == 0:
             clear_gui()
             message.config(text="User has been granted !")
@@ -313,6 +314,10 @@ def rsa_gen_gui():
     username = assign_username()
     name_label = tk.Label(window, text="Name of the key")
     name_entry = tk.Entry(window, text="Name")
+    if token == "":
+        return_button = tk.Button(window, text="Return to the main menu", command=login)
+    else:
+        return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
 
     def rsa_gen_button():
         name = name_entry.get()
@@ -320,7 +325,6 @@ def rsa_gen_gui():
         error = gs.generate_rsa_key_pair(name,username,send)
         clear_gui()
         message = tk.Label(window, text="")
-        return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
         if error == 0:
             message.config(text="The keys have been generated")
         elif error == 1:
@@ -332,6 +336,7 @@ def rsa_gen_gui():
     name_label.pack()
     name_entry.pack()
     send_button.pack()
+    return_button.pack()
 
 def decrypt_message_with_private_key(private_key_path, encrypted_message):
     # Charger la clé privée depuis le fichier PEM
@@ -409,11 +414,11 @@ def send_message_api_gui():
     user_entry.pack()
     message_label.pack()
     message_entry.pack()
+    return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
 
     def send_message_api_button():
         clear_gui()
         result = tk.Label(window, text="")
-        return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
         target = user_entry.get()
         message = message_entry.get()
         command = 'send_message'
@@ -432,6 +437,7 @@ def send_message_api_gui():
     message_entry.pack()
     send_button = tk.Button(window, text="Send message", command=send_message_api_button)
     send_button.pack()
+    return_button.pack()
 
 def read_message_api_gui():
     clear_gui()
@@ -478,6 +484,7 @@ def grant_api_gui():
     user_entry = tk.Entry(window, text="User to grant")
     level_label = tk.Label(window, text="Level to grant")
     user_level = tk.Entry(window, text="Level")
+    return_button = tk.Button(window, text="Return to main menu", command=user_gui)
 
     def grant_user_api_button():
         user_target = user_entry.get()
@@ -486,7 +493,6 @@ def grant_api_gui():
         command = "grant_user"
         content = [user_target,level_target]
         success = send_command(command,content)
-        return_button = tk.Button(window, text="Return to main menu", command=user_gui)
         if success:
             clear_gui()
             message.config(text="User has been granted !")
@@ -502,12 +508,14 @@ def grant_api_gui():
     level_label.pack()
     user_level.pack()
     user_button.pack()
+    return_button.pack()
 
 def invite_api_gui():
     clear_gui()
     username = assign_username()
     target_entry = tk.Entry(window, text="User to invite")
     target_entry.pack()
+    return_button = tk.Button(window, text="Return to main menu", command=user_gui)
     
 
     def send_invite_api_button():
@@ -517,7 +525,6 @@ def invite_api_gui():
         content = [username,target]
         error = send_command(command,content)
         message = tk.Label(window, text="")
-        return_button = tk.Button(window, text="Return to main menu", command=user_gui)
         print(error)
         if error == False:
             message.config(text="Error creating invitation code")
@@ -528,6 +535,7 @@ def invite_api_gui():
 
     send_button = tk.Button(window, text="Send invitation", command=send_invite_api_button)
     send_button.pack()
+    return_button.pack()
 
 def enter_invite_api():
     clear_gui()
@@ -638,7 +646,7 @@ def user_gui():
     aes_cipher_button = tk.Button(window, text="Ciphering files (AES in RSA, unlimited size)", command=aes_cipher_gui)
     aes_uncipher_button = tk.Button(window, text="Unciphering files (AES in RSA, unlimited size)", command=aes_uncipher_gui)
     test_button = tk.Button(window, text="Test command API", command=test_command)
-    logout_button = tk.Button(window, text="Logout", command=login)
+    logout_button = tk.Button(window, text="Logout", command=logout)
     exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
     token_label = tk.Label(window,text="Token : "+str(token))
 #    send_button.pack()
@@ -661,12 +669,19 @@ def user_gui():
     exit_button.pack()
     token_label.pack()
 
+def logout():
+    clear_gui()
+    global token
+    token = ""
+    login()
+
 def login():
     clear_gui()
+    login_label.pack()
     entry.pack()
-    launch.pack()
     launch_api.pack()
     launch_invite_api.pack()
+    rsa_button.pack()
     exit_button.pack()
 
 def login_api():
@@ -745,14 +760,16 @@ window.geometry("600x600")
 message = tk.Label(window, text="")
 
 entry = tk.Entry(window, text="Login")
-launch = tk.Button(window, text="Authenticate", command=call_gs)
+login_label = tk.Label(window, text="Login")
 launch_api = tk.Button(window, text="Authenticate with API (WIP)", command=login_api)
 launch_invite_api = tk.Button(window, text="Enter invitation code", command=enter_invite_api)
+rsa_button = tk.Button(window, text="Generate RSA keys", command=rsa_gen_gui)
 exit_button = tk.Button(window, text="Exit RTMSG", command=exit_rtmsg)
+login_label.pack()
 entry.pack()
-launch.pack()
 launch_api.pack()
 launch_invite_api.pack()
+rsa_button.pack()
 exit_button.pack()
 
 window.mainloop()
