@@ -314,6 +314,10 @@ def rsa_gen_gui():
     username = assign_username()
     name_label = tk.Label(window, text="Name of the key")
     name_entry = tk.Entry(window, text="Name")
+    if token == "":
+        return_button = tk.Button(window, text="Return to the main menu", command=login)
+    else:
+        return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
 
     def rsa_gen_button():
         name = name_entry.get()
@@ -321,10 +325,6 @@ def rsa_gen_gui():
         error = gs.generate_rsa_key_pair(name,username,send)
         clear_gui()
         message = tk.Label(window, text="")
-        if token == "":
-            return_button = tk.Button(window, text="Return to the main menu", command=login)
-        else:
-            return_button = tk.Button(window, text="Return to the main menu", command=user_gui)
         if error == 0:
             message.config(text="The keys have been generated")
         elif error == 1:
@@ -336,6 +336,7 @@ def rsa_gen_gui():
     name_label.pack()
     name_entry.pack()
     send_button.pack()
+    return_button.pack()
 
 def decrypt_message_with_private_key(private_key_path, encrypted_message):
     # Charger la clé privée depuis le fichier PEM
